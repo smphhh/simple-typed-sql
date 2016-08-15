@@ -1,8 +1,23 @@
 {
   "name": "simple-typed-sql",
   "version": "0.0.1",
-  "description": "",
-  "private": true,
+  "description": "Simple SQL library for Typescript",
+  "license": "MIT",
+  "keywords": [
+    "typescript",
+    "sql",
+    "orm",
+    "node"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/smphhh/simple-typed-sql"
+  },
+  "main": "lib/index.js",
+  "author": {
+    "name": "Samuli Holopainen",
+    "email": "samuli.holopainen@yahoo.com"
+  },
   "dependencies": {
     "bluebird": "^3.4.1",
     "knex": "^0.11.9",
@@ -21,5 +36,6 @@
     "build": "tsc",
     "test": "mocha lib/**/__tests__/**/*.js",
     "typings-install": "typings install"
-  }
+  },
+  "typings": "./lib/index.d.ts"
 }

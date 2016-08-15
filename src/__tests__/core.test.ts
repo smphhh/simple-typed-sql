@@ -45,7 +45,7 @@ describe("Simple typed SQL", function () {
             table.string('external_id').notNullable().unique();
         });
 
-        mapper = new Mapper(knexClient);
+        mapper = new Mapper(knexClient, { stringifyJson: true });
     });
 
     it("should allow inserting and selecting simple data", async function () {
@@ -83,6 +83,49 @@ describe("Simple typed SQL", function () {
             .selectAllFrom(testModel);
 
         expect(data).to.deep.equal([]);
+    });
+
+    it("should support basic ordering", async function () {
+        await mapper.insertInto(testModel, testObject1);
+        await mapper.insertInto(testModel, testObject2);
+
+        let data = await mapper.selectAllFrom(testModel).orderBy(testModel.id, 'asc');
+        expect(data).to.deep.equal([testObject1, testObject2]);
+
+        data = await mapper.selectAllFrom(testModel).orderBy(testModel.id, 'desc');
+        expect(data).to.deep.equal([testObject2, testObject1]);
+    });
+
+    it("should support less-than where clauses", async function () {
+        await mapper.insertInto(testModel, testObject1);
+        await mapper.insertInto(testModel, testObject2);
+
+        let data = await mapper.selectAllFrom(testModel).whereLess(testModel.id, 2);
+
+        expect(data).to.deep.equal([testObject1]);
+    });
+
+    it("should support greater-than where clauses", async function () {
+        await mapper.insertInto(testModel, testObject1);
+        await mapper.insertInto(testModel, testObject2);
+
+        let data = await mapper.selectAllFrom(testModel).whereGreater(testModel.id, 1);
+
+        expect(data).to.deep.equal([testObject2]);
+    });
+
+    it("should findOneByKey", async function () {
+        await mapper.insertInto(testModel, testObject1);
+        await mapper.insertInto(testModel, testObject2);
+
+        let data = await mapper.tryFindOneByKey(testModel, { id: 1 });
+        expect(data).to.deep.equal(testObject1);
+
+        data = await mapper.tryFindOneByKey(testModel, { externalId: 'b' });
+        expect(data).to.deep.equal(testObject2);
+
+        data = await mapper.tryFindOneByKey(testModel, { externalId: 'not_found' });
+        expect(data).to.be.null;
     });
 });
 

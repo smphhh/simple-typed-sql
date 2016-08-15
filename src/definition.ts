@@ -1,5 +1,5 @@
 
-interface Metadata {
+export interface Metadata {
     tableName: string;
     attributes: {
         [attributeName: string]: AttributeDefinition
@@ -73,11 +73,11 @@ export function defineDatetime(options?: AttributeOptions) {
 
 export type DataMapperOptions = SerializationOptions;
 
-interface AttributeOptions {
+export interface AttributeOptions {
     fieldName?: string
 }
 
-type DataType = 'number' | 'string' | 'json' | 'datetime';
+export type DataType = 'number' | 'string' | 'json' | 'datetime';
 
 export interface AttributeDefinition {
     dataType: DataType;

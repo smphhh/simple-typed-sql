@@ -14,7 +14,8 @@ import {
 
 export class BaseMapper {
     constructor(
-        private knexBuilder: knex.QueryInterface
+        private knexBuilder: knex.QueryInterface,
+        private options: SerializationOptions
     ) {
     }
 
@@ -26,15 +27,42 @@ export class BaseMapper {
 
         let query = this.knexBuilder.select(absoluteFieldNames).from(tableName);
 
-        return new Query(model, query, {});
+        return new Query(model, query, this.options);
     }
 
     insertInto<T extends U, U>(model: ModelDefinition<T>, data: T) {
         let query = this.knexBuilder
-            .insert(serializeData(model, data, {}))
+            .insert(serializeData(model, data, this.options))
             .into(model.__metadata.tableName);
 
-        return new InsertQuery(model, query, {});
+        return new InsertQuery(model, query, this.options);
+    }
+
+    async tryFindOneByKey<T extends U, U>(model: ModelDefinition<T>, key: U) {
+        let attributeNames = getAttributes(model);
+        let whereConditions = serializeData(model, key, this.options);
+        let fieldNames = getFieldNames(model);
+        let query = this.knexBuilder.columns(fieldNames).select().from(model.__metadata.tableName);
+        
+        if (Object.keys(whereConditions).length > 0) {
+            query = query.where(whereConditions);
+        }
+
+        let data = await query.limit(1);
+        if (data.length === 1) {
+            return deserializeData(model, data[0], this.options);
+        } else {
+            return null as T;
+        }
+    }
+
+    async findOneByKey<T extends U, U>(model: ModelDefinition<T>, key: U) {
+        let data = await this.tryFindOneByKey(model, key);
+        if (!data) {
+            throw new Error("Expected to find exactly one row");
+        } else {
+            return data;
+        }
     }
 }
 
@@ -42,18 +70,26 @@ export class Mapper extends BaseMapper {
     //private query: knex.QueryBuilder;
 
     constructor(
-        private knexClient: knex
+        private knexClient: knex,
+        options: SerializationOptions
     ) {
-        super(knexClient);
+        super(knexClient, options);
     }
 
     transaction(callback: (transactionMapper: BaseMapper) => Promise<void>) {
         this.knexClient.transaction(function (trx) {
             let t: knex.Transaction;
-            let transactionMapper = new BaseMapper(trx);
+            let transactionMapper = new BaseMapper(trx, this.options);
             return callback(transactionMapper);
         });
     }
+}
+
+type ComparisonOperator = '<' | '>' | '<=' | '>=' | '=';
+
+export interface WhereClause {
+    operator: string;
+    operands: WhereClause[];
 }
 
 export class Query<ResultType> {
@@ -64,9 +100,44 @@ export class Query<ResultType> {
     ) {
     }
 
+    where(clause: WhereClause) {
+        throw new Error("Not implemented");
+    }
+
     whereEqual<T>(attribute: T, value: T) {
+        return this.whereOperator(attribute, '=', value);
+    }
+
+    whereLess<T>(attribute: T, value: T) {
+        return this.whereOperator(attribute, '<', value);
+    }
+
+    whereLessOrEqual<T>(attribute: T, value: T) {
+        return this.whereOperator(attribute, '<=', value);
+    }
+
+    whereGreater<T>(attribute: T, value: T) {
+        return this.whereOperator(attribute, '>', value);
+    }
+
+    whereGreaterOrEqual<T>(attribute: T, value: T) {
+        return this.whereOperator(attribute, '>=', value);
+    }
+
+    limit(count: number) {
+        this.query = this.query.limit(count);
+        return this;
+    }
+
+    orderBy(attribute: any, direction: 'asc' | 'desc') {
+        let attributeDefinition: AttributeDefinition = attribute;
+        this.query = this.query.orderBy(attributeDefinition.fieldName, direction);
+        return this;
+    }
+
+    private whereOperator<T>(attribute: T, operator: ComparisonOperator, value: T) {
         let attributeDefinition: AttributeDefinition = attribute as any;
-        this.query = this.query.andWhere(attributeDefinition.fieldName, value as any);
+        this.query = this.query.andWhere(attributeDefinition.fieldName, operator, value as any);
         return this;
     }
 
@@ -87,14 +158,6 @@ export class InsertQuery<InsertDataType> implements PromiseLike<void> {
         private serializationOptions: SerializationOptions
     ) {
     }
-
-    /*into<T extends InsertDataType>(model: ModelDefinition<T>) {
-        let query = this.knexClient
-            .insert(serializeData(model, this.data, this.serializationOptions))
-            .into(model.__metadata.tableName);
-
-        return new Query(model, query, this.serializationOptions);
-    }*/
 
     async execute() {
         let queryResults: any[] = await this.knexQuery;
