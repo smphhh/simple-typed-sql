@@ -1,0 +1,26 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Attach",
+			"type": "node",
+			"request": "attach",
+			"port": 5858
+		},
+		{
+			"name": "Run mocha",
+			"type": "node",
+			"program": "${workspaceRoot}/node_modules/mocha/bin/_mocha",
+			"stopOnEntry": false,
+			"args": ["lib/**/__tests__/**/*.js"],
+			"cwd": "${workspaceRoot}",
+			"preLaunchTask": "build",
+			"request": "launch",
+			"runtimeExecutable": null,
+			"env": { "NODE_ENV": "production"},
+			"externalConsole": false,
+			"sourceMaps": true,
+			"outDir": "${workspaceRoot}/lib"
+		}
+	]
+}
