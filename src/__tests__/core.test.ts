@@ -127,6 +127,17 @@ describe("Simple typed SQL", function () {
         data = await mapper.tryFindOneByKey(testModel, { externalId: 'not_found' });
         expect(data).to.be.null;
     });
+
+    it("should support truncating tables", async function () {
+        await mapper.insertInto(testModel, testObject1);
+        await mapper.insertInto(testModel, testObject2);
+
+        await mapper.truncate(testModel);
+
+        let data = await mapper.selectAllFrom(testModel);
+
+        expect(data).to.deep.equal([]);
+    });
 });
 
 

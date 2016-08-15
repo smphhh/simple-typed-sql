@@ -38,6 +38,10 @@ export class BaseMapper {
         return new InsertQuery(model, query, this.options);
     }
 
+    truncate<T>(model: ModelDefinition<T>): Promise<void> {
+        return Promise.resolve(this.knexBuilder.table(model.__metadata.tableName).truncate());
+    }
+
     async tryFindOneByKey<T extends U, U>(model: ModelDefinition<T>, key: U) {
         let attributeNames = getAttributes(model);
         let whereConditions = serializeData(model, key, this.options);
