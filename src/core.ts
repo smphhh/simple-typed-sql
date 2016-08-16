@@ -90,8 +90,8 @@ export class Mapper extends BaseMapper {
         super(knexClient, options);
     }
 
-    transaction(callback: (transactionMapper: BaseMapper) => Promise<void>) {
-        return Promise.resolve(this.knexClient.transaction((trx) => {
+    transaction<T>(callback: (transactionMapper: BaseMapper) => Promise<T>) {
+        return Promise.resolve<T>(this.knexClient.transaction((trx) => {
             let t: knex.Transaction;
             let transactionMapper = new BaseMapper(trx, this.options);
             return callback(transactionMapper);

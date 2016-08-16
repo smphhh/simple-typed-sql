@@ -98,6 +98,18 @@ describe("Simple typed SQL", function () {
         expect(data).to.deep.equal([]);
     });
 
+    it("should support returning values from transaction", async function () {
+        await mapper.insertInto(testModel, testObject1);
+        await mapper.insertInto(testModel, testObject2);
+
+        let data = await mapper.transaction(async (trxMapper) => {
+            let localData = await trxMapper.selectAllFrom(testModel).whereEqual(testModel.id, 1);
+            return localData;
+        });
+
+        expect(data).to.deep.equal([testObject1]);
+    });
+
     it("should support basic ordering", async function () {
         await mapper.insertInto(testModel, testObject1);
         await mapper.insertInto(testModel, testObject2);
