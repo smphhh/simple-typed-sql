@@ -181,6 +181,15 @@ export class SelectQuery<ResultType> extends WhereQuery {
         return this;
     }
 
+    async getOne() {
+        let data = await this.execute();
+        if (data.length === 1) {
+            return data[0];
+        } else {
+            throw new Error("Expected exactly one row");
+        }
+    }
+
     async execute() {
         let queryResults: any[] = await this.knexQuery;
         return queryResults.map(result => deserializeData(this.resultModel, result, this.serializationOptions));

@@ -80,6 +80,15 @@ describe("Simple typed SQL", function () {
         expect(data).to.deep.equal([testObject1]);
     });
 
+    it("should support returning returning a result set with one row as a simple instance", async function () {
+        await mapper.insertInto(testModel, testObject1);
+        await mapper.insertInto(testModel, testObject2);
+
+        let data = await mapper.selectAllFrom(testModel).whereEqual(testModel.id, 1).getOne();
+
+        expect(data).to.deep.equal(testObject1);
+    });
+
     it("should rollback transactions", async function () {
         try {
             await mapper.transaction(async (trxMapper) => {
