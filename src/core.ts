@@ -15,7 +15,7 @@ import {
 export class BaseMapper {
     constructor(
         private knexBuilder: knex.QueryInterface,
-        private options: SerializationOptions
+        protected options: SerializationOptions
     ) {
     }
 
@@ -81,11 +81,11 @@ export class Mapper extends BaseMapper {
     }
 
     transaction(callback: (transactionMapper: BaseMapper) => Promise<void>) {
-        this.knexClient.transaction(function (trx) {
+        return Promise.resolve(this.knexClient.transaction((trx) => {
             let t: knex.Transaction;
             let transactionMapper = new BaseMapper(trx, this.options);
             return callback(transactionMapper);
-        });
+        }));
     }
 }
 
@@ -96,12 +96,30 @@ export interface WhereClause {
     operands: WhereClause[];
 }
 
-export class Query<ResultType> {
+export class BaseQuery {
+    constructor(
+        protected knexQuery: knex.QueryBuilder
+    ) {
+
+    }
+
+    getKnexQuery() {
+        return this.knexQuery;
+    }
+}
+
+export class Query<ResultType> extends BaseQuery {
     constructor(
         private resultModel: ModelDefinition<ResultType>,
-        private query: knex.QueryBuilder,
+        knexQuery: knex.QueryBuilder,
         private serializationOptions: SerializationOptions
     ) {
+        super(knexQuery);
+    }
+
+    forUpdate() {
+        this.knexQuery = this.knexQuery.forUpdate();
+        return this;
     }
 
     where(clause: WhereClause) {
@@ -129,24 +147,24 @@ export class Query<ResultType> {
     }
 
     limit(count: number) {
-        this.query = this.query.limit(count);
+        this.knexQuery = this.knexQuery.limit(count);
         return this;
     }
 
     orderBy(attribute: any, direction: 'asc' | 'desc') {
         let attributeDefinition: AttributeDefinition = attribute;
-        this.query = this.query.orderBy(attributeDefinition.fieldName, direction);
+        this.knexQuery = this.knexQuery.orderBy(attributeDefinition.fieldName, direction);
         return this;
     }
 
     private whereOperator<T>(attribute: T, operator: ComparisonOperator, value: T) {
         let attributeDefinition: AttributeDefinition = attribute as any;
-        this.query = this.query.andWhere(attributeDefinition.fieldName, operator, value as any);
+        this.knexQuery = this.knexQuery.andWhere(attributeDefinition.fieldName, operator, value as any);
         return this;
     }
 
     async execute() {
-        let queryResults: any[] = await this.query;
+        let queryResults: any[] = await this.knexQuery;
         return queryResults.map(result => deserializeData(this.resultModel, result, this.serializationOptions));
     }
 
@@ -155,12 +173,13 @@ export class Query<ResultType> {
     }
 }
 
-export class InsertQuery<InsertDataType> implements PromiseLike<void> {
+export class InsertQuery<InsertDataType> extends BaseQuery implements PromiseLike<void> {
     constructor(
         private model: ModelDefinition<InsertDataType>,
-        private knexQuery: knex.QueryBuilder,
+        knexQuery: knex.QueryBuilder,
         private serializationOptions: SerializationOptions
     ) {
+        super(knexQuery);
     }
 
     async execute() {

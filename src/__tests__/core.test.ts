@@ -16,10 +16,21 @@ chai.use(chaiAsPromised);
 
 let expect = chai.expect;
 
-let testDatabaseOptions = {
+/*let testDatabaseOptions = {
     client: 'sqlite3',
     connection: ':memory:',
     useNullAsDefault: true
+};*/
+
+let testDatabaseOptions = {
+    client: 'pg',
+    connection: {
+        user: 'samuli',
+        password: 'samuli',
+        host: '10.0.75.235',
+        port: 5433,
+        database: 'gio_etl_scheduler_test1'
+    }
 };
 
 describe("Simple typed SQL", function () {
@@ -36,16 +47,18 @@ describe("Simple typed SQL", function () {
     let testObject2 = { id: 2, externalId: 'b' };
 
     let mapper: Mapper;
+    let knexClient: knex;
 
     beforeEach(async function () {
-        let knexClient = knex(testDatabaseOptions);
+        knexClient = knex(testDatabaseOptions);
 
+        await knexClient.schema.dropTableIfExists('test_model');
         await knexClient.schema.createTable('test_model', function (table) {
             table.increments('id').primary();
             table.string('external_id').notNullable().unique();
         });
 
-        mapper = new Mapper(knexClient, { stringifyJson: true });
+        mapper = new Mapper(knexClient, { stringifyJson: false });
     });
 
     it("should allow inserting and selecting simple data", async function () {
@@ -137,6 +150,29 @@ describe("Simple typed SQL", function () {
         let data = await mapper.selectAllFrom(testModel);
 
         expect(data).to.deep.equal([]);
+    });
+
+    it("should support locking rows for update", async function () {
+        await mapper.insertInto(testModel, testObject1);
+        await mapper.insertInto(testModel, testObject2);
+
+        await mapper.transaction(async (trxMapper) => {
+            let query = trxMapper.selectAllFrom(testModel).forUpdate();
+
+            console.log(query.getKnexQuery().toString());
+
+            let data = await query;
+        });
+
+        /*await knexClient.transaction(async (trx) => {
+            let query = trx.select('*').forUpdate().from('test_model');
+
+            console.log(query.toString());
+
+            let data = await query;
+
+            //await trx.insert(testObject1).into
+        });*/
     });
 });
 
