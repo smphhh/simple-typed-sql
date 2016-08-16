@@ -152,14 +152,23 @@ describe("Simple typed SQL", function () {
         expect(data).to.deep.equal([]);
     });
 
+    it("should support basic updating", async function () {
+        await mapper.insertInto(testModel, testObject1);
+        await mapper.insertInto(testModel, testObject2);
+
+        await mapper.updateWith(testModel, { externalId: 'updated' }).whereEqual(testModel.externalId, testObject1.externalId);
+
+        let data = await mapper.selectAllFrom(testModel).orderBy(testModel.id, 'asc');
+
+        expect(data).to.deep.equal([Object.assign({}, testObject1, { externalId: 'updated' }), testObject2]);
+    });
+
     it("should support locking rows for update", async function () {
         await mapper.insertInto(testModel, testObject1);
         await mapper.insertInto(testModel, testObject2);
 
         await mapper.transaction(async (trxMapper) => {
             let query = trxMapper.selectAllFrom(testModel).forUpdate();
-
-            console.log(query.getKnexQuery().toString());
 
             let data = await query;
         });

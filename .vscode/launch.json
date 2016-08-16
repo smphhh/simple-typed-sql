@@ -17,7 +17,7 @@
 			"preLaunchTask": "build",
 			"request": "launch",
 			"runtimeExecutable": null,
-			"env": { "NODE_ENV": "production", "DEBUG": "knex*" },
+			"env": { "NODE_ENV": "production", "DEBUG": "" },
 			"externalConsole": false,
 			"sourceMaps": true,
 			"outDir": "${workspaceRoot}/lib"

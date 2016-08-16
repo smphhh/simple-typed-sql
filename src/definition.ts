@@ -89,6 +89,10 @@ export interface SerializationOptions {
     stringifyJson?: boolean;
 }
 
+export function getTableName<T>(definition: ModelDefinition<T>) {
+    return definition.__metadata.tableName;
+}
+
 export function getAttributes<T>(definition: ModelDefinition<T>) {
     return Object.keys(definition.__metadata.attributes);
 }

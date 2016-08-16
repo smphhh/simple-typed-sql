@@ -5,6 +5,7 @@ import {
     AttributeDefinition,
     getAttributes,
     getFieldNames,
+    getTableName,
     ModelDefinition,
     serializeData,
     deserializeData,
@@ -20,14 +21,23 @@ export class BaseMapper {
     }
 
     selectAllFrom<T>(model: ModelDefinition<T>) {
-        let tableName = model.__metadata.tableName;
+        let tableName = getTableName(model);
         let fieldNames = getFieldNames(model);
 
         let absoluteFieldNames = fieldNames.map(fieldName => `${tableName}.${fieldName}`);
 
         let query = this.knexBuilder.select(absoluteFieldNames).from(tableName);
 
-        return new Query(model, query, this.options);
+        return new SelectQuery(model, query, this.options);
+    }
+
+    updateWith<T extends U, U>(model: ModelDefinition<T>, data: T) {
+        let tableName = getTableName(model);
+        let fieldData = serializeData(model, data, this.options);
+
+        let query = this.knexBuilder.table(tableName).update(fieldData);
+
+        return new UpdateQuery(model, query, this.options);
     }
 
     insertInto<T extends U, U>(model: ModelDefinition<T>, data: T) {
@@ -108,18 +118,11 @@ export class BaseQuery {
     }
 }
 
-export class Query<ResultType> extends BaseQuery {
+export class WhereQuery extends BaseQuery {
     constructor(
-        private resultModel: ModelDefinition<ResultType>,
-        knexQuery: knex.QueryBuilder,
-        private serializationOptions: SerializationOptions
+        knexQuery: knex.QueryBuilder
     ) {
         super(knexQuery);
-    }
-
-    forUpdate() {
-        this.knexQuery = this.knexQuery.forUpdate();
-        return this;
     }
 
     where(clause: WhereClause) {
@@ -146,6 +149,27 @@ export class Query<ResultType> extends BaseQuery {
         return this.whereOperator(attribute, '>=', value);
     }
 
+    private whereOperator<T>(attribute: T, operator: ComparisonOperator, value: T) {
+        let attributeDefinition: AttributeDefinition = attribute as any;
+        this.knexQuery = this.knexQuery.andWhere(attributeDefinition.fieldName, operator, value as any);
+        return this;
+    }
+}
+
+export class SelectQuery<ResultType> extends WhereQuery {
+    constructor(
+        private resultModel: ModelDefinition<ResultType>,
+        knexQuery: knex.QueryBuilder,
+        private serializationOptions: SerializationOptions
+    ) {
+        super(knexQuery);
+    }
+
+    forUpdate() {
+        this.knexQuery = this.knexQuery.forUpdate();
+        return this;
+    }
+
     limit(count: number) {
         this.knexQuery = this.knexQuery.limit(count);
         return this;
@@ -157,12 +181,6 @@ export class Query<ResultType> extends BaseQuery {
         return this;
     }
 
-    private whereOperator<T>(attribute: T, operator: ComparisonOperator, value: T) {
-        let attributeDefinition: AttributeDefinition = attribute as any;
-        this.knexQuery = this.knexQuery.andWhere(attributeDefinition.fieldName, operator, value as any);
-        return this;
-    }
-
     async execute() {
         let queryResults: any[] = await this.knexQuery;
         return queryResults.map(result => deserializeData(this.resultModel, result, this.serializationOptions));
@@ -170,6 +188,25 @@ export class Query<ResultType> extends BaseQuery {
 
     then<TResult>(onfulfilled?: (value: ResultType[]) => TResult | PromiseLike<TResult>, onrejected?: (reason: any) => TResult | PromiseLike<TResult>): PromiseLike<TResult> {
         return this.execute().then(onfulfilled, onrejected);
+    }
+}
+
+export class UpdateQuery<UpdateDataType> extends WhereQuery implements PromiseLike<void> {
+    constructor(
+        private model: ModelDefinition<UpdateDataType>,
+        knexQuery: knex.QueryBuilder,
+        private serializationOptions: SerializationOptions
+    ) {
+        super(knexQuery);
+    }
+    
+    async execute() {
+        let queryResults: any[] = await this.knexQuery;
+        return;
+    }
+
+    then<TResult>(onfulfilled?: () => TResult | PromiseLike<TResult>, onrejected?: (reason: any) => TResult | PromiseLike<TResult>): PromiseLike<TResult> {
+        return this.knexQuery.then(onfulfilled, onrejected);
     }
 }
 
