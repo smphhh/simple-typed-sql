@@ -193,16 +193,31 @@ describe("Simple typed SQL", function () {
 
             let data = await query;
         });
+    });
 
-        /*await knexClient.transaction(async (trx) => {
-            let query = trx.select('*').forUpdate().from('test_model');
+    it("should support deleting rows", async function () {
+        await mapper.insertInto(testModel, testObject1);
+        await mapper.insertInto(testModel, testObject2);
 
-            console.log(query.toString());
+        await mapper
+            .deleteFrom(testModel);
 
-            let data = await query;
+        let data = await mapper.selectAllFrom(testModel);
 
-            //await trx.insert(testObject1).into
-        });*/
+        expect(data).to.deep.equal([]);
+    });
+
+    it("should support deleting rows with a where clause", async function () {
+        await mapper.insertInto(testModel, testObject1);
+        await mapper.insertInto(testModel, testObject2);
+
+        await mapper
+            .deleteFrom(testModel)
+            .whereEqual(testModel.id, 1);
+
+        let data = await mapper.selectAllFrom(testModel);
+
+        expect(data).to.deep.equal([testObject2]);
     });
 });
 

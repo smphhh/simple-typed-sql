@@ -48,6 +48,14 @@ export class BaseMapper {
         return new InsertQuery(model, query, this.options);
     }
 
+    deleteFrom<T extends U, U>(model: ModelDefinition<T>) {
+        let query = this.knexBuilder
+            .from(getTableName(model))
+            .del();
+        
+        return new DeleteQuery(model, query, this.options);
+    }
+
     truncate<T>(model: ModelDefinition<T>): Promise<void> {
         return Promise.resolve(this.knexBuilder.table(model.__metadata.tableName).truncate());
     }
@@ -201,6 +209,25 @@ export class SelectQuery<ResultType> extends WhereQuery {
 }
 
 export class UpdateQuery<UpdateDataType> extends WhereQuery implements PromiseLike<void> {
+    constructor(
+        private model: ModelDefinition<UpdateDataType>,
+        knexQuery: knex.QueryBuilder,
+        private serializationOptions: SerializationOptions
+    ) {
+        super(knexQuery);
+    }
+    
+    async execute() {
+        let queryResults: any[] = await this.knexQuery;
+        return;
+    }
+
+    then<TResult>(onfulfilled?: () => TResult | PromiseLike<TResult>, onrejected?: (reason: any) => TResult | PromiseLike<TResult>): PromiseLike<TResult> {
+        return this.knexQuery.then(onfulfilled, onrejected);
+    }
+}
+
+export class DeleteQuery<UpdateDataType> extends WhereQuery implements PromiseLike<void> {
     constructor(
         private model: ModelDefinition<UpdateDataType>,
         knexQuery: knex.QueryBuilder,
