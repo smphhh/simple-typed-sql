@@ -47,6 +47,12 @@ export function defineModel<InstanceType>(
     return Object.assign(definition, (metadata.attributes as any) as InstanceType)
 }
 
+export function defineBoolean(options?: AttributeOptions) {
+    let definition: any = options || {};
+    definition._type = 'boolean';
+    return definition as boolean;
+}
+
 export function defineString(options?: AttributeOptions) {
     let definition: any = options || {};
     definition._type = 'string';
