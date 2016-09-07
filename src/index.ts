@@ -4,7 +4,8 @@ export {
     defineJson,
     defineModel,
     defineNumber,
-    defineString
+    defineString,
+    defineBoolean
 } from './definition';
 
 export {
