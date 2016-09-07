@@ -13,7 +13,13 @@ export interface MetadataDefinition {
     __metadata: Metadata;
 }
 
-export type ModelDefinition<InstanceType> = MetadataDefinition & InstanceType;
+export interface PrototypeDefinition<InstanceType> {
+    __prototypes: {
+        instance: InstanceType
+    }
+}
+
+export type ModelDefinition<InstanceType> = MetadataDefinition & PrototypeDefinition<InstanceType> & InstanceType;
 
 export function defineModel<InstanceType>(
     tableName: string,
@@ -25,6 +31,12 @@ export function defineModel<InstanceType>(
             tableName: tableName,
             attributes: {},
             fields: {}
+        }
+    };
+
+    let prototypes = {
+        __prototypes: {
+            instance: {} as InstanceType
         }
     };
 
@@ -44,7 +56,7 @@ export function defineModel<InstanceType>(
         metadata.fields[attributeDefinition.fieldName] = attributeDefinition;
     }
 
-    return Object.assign(definition, (metadata.attributes as any) as InstanceType)
+    return Object.assign(definition, prototypes, (metadata.attributes as any) as InstanceType)
 }
 
 export function defineBoolean(options?: AttributeOptions) {
