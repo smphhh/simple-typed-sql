@@ -236,7 +236,7 @@ export class WhereQuery extends BaseQuery {
 
     private whereOperator<T>(attribute: T, operator: ComparisonOperator, value: T) {
         let attributeDefinition: AttributeDefinition = attribute as any;
-        this.knexQuery = this.knexQuery.andWhere(attributeDefinition.fieldName, operator, value as any);
+        this.knexQuery = this.knexQuery.andWhere(getAbsoluteFieldName(attributeDefinition), operator, value as any);
         return this;
     }
 }
