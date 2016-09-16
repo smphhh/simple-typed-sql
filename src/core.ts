@@ -33,7 +33,7 @@ export class BaseMapper {
 
         let query = this.knexBuilder.select(selectColumns).from(tableName);
 
-        return new SelectQuery(
+        return new SelectQuery<T>(
             getAbsoluteFieldNameAttributeDefinitionMap(model),
             query,
             this.options
@@ -86,7 +86,7 @@ export class BaseMapper {
 
         let data = await query.limit(1);
         if (data.length === 1) {
-            return deserializeData(getAbsoluteFieldNameAttributeDefinitionMap(model), data[0], this.options);
+            return deserializeData<T>(getAbsoluteFieldNameAttributeDefinitionMap(model), data[0], this.options);
         } else {
             return null as T;
         }
@@ -277,7 +277,7 @@ export class SelectQuery<ResultType> extends WhereQuery {
 
     async execute() {
         let queryResults: any[] = await this.knexQuery;
-        return queryResults.map(result => deserializeData(this.fields, result, this.serializationOptions));
+        return queryResults.map(result => deserializeData<ResultType>(this.fields, result, this.serializationOptions));
     }
 
     then<TResult>(onfulfilled?: (value: ResultType[]) => TResult | PromiseLike<TResult>, onrejected?: (reason: any) => TResult | PromiseLike<TResult>): PromiseLike<TResult> {
