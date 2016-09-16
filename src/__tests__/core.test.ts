@@ -53,10 +53,22 @@ describe("Simple typed SQL", function () {
         }
     );
 
+    let testModel3 = defineModel(
+        'test_model_3',
+        {
+            id: defineNumber(),
+            testModel1Id: defineNumber({ fieldName: 'test_model_1_id' }),
+            value: defineString()
+        }
+    );
+
     let testObject1 = { id: 1, externalId: 'a' };
     let testObject2 = { id: 2, externalId: 'b' };
 
     let testObject11 = { id: 1, booleanAttribute: true, datetimeAttribute: new Date() };
+
+    let testObject3_1 = { id: 1, testModel1Id: 1, value: 'x' };
+    let testObject3_2 = { id: 2, testModel1Id: 2, value: 'z' };
 
     let mapper: Mapper;
     let knexClient: knex;
@@ -75,6 +87,13 @@ describe("Simple typed SQL", function () {
             table.increments('id').primary();
             table.boolean('boolean_attribute').notNullable();
             table.timestamp('datetime_attribute').notNullable();
+        });
+
+        await knexClient.schema.dropTableIfExists('test_model_3');
+        await knexClient.schema.createTable('test_model_3', function (table) {
+            table.increments('id').primary();
+            table.integer('test_model_1_id').notNullable();
+            table.string('value').notNullable();
         });
 
         mapper = new Mapper(knexClient, { stringifyJson: false });
@@ -245,6 +264,68 @@ describe("Simple typed SQL", function () {
         let data = await mapper.selectAllFrom(testModel1);
 
         expect(data).to.deep.equal([testObject2]);
+    });
+
+    it("should support simple join queries", async function () {
+        await mapper.insertInto(testModel1, testObject1);
+        await mapper.insertInto(testModel1, testObject2);
+
+        await mapper.insertInto(testModel3, testObject3_1);
+
+        let data = await mapper
+            .from(testModel1)
+            .innerJoin(testModel3, testModel1.id, testModel3.testModel1Id)
+            .select({
+                externalId: testModel1.externalId,
+                value2: testModel3.value
+            });
+
+        expect(data).to.deep.equal([
+            { externalId: testObject1.externalId, value2: testObject3_1.value }
+        ]);
+    });
+
+    it("should support simple join queries with where clauses", async function () {
+        await mapper.insertInto(testModel1, testObject1);
+        await mapper.insertInto(testModel1, testObject2);
+
+        await mapper.insertInto(testModel3, testObject3_1);
+        await mapper.insertInto(testModel3, testObject3_2);
+
+        let data = await mapper
+            .from(testModel1)
+            .innerJoin(testModel3, testModel1.id, testModel3.testModel1Id)
+            .select({
+                externalId: testModel1.externalId,
+                value2: testModel3.value
+            })
+            .whereEqual(testModel3.value, testObject3_2.value);
+
+        expect(data).to.deep.equal([
+            { externalId: testObject2.externalId, value2: testObject3_2.value }
+        ]);
+    });
+
+    it("should support simple join queries with order by and limit clauses", async function () {
+        await mapper.insertInto(testModel1, testObject1);
+        await mapper.insertInto(testModel1, testObject2);
+
+        await mapper.insertInto(testModel3, testObject3_1);
+        await mapper.insertInto(testModel3, testObject3_2);
+
+        let data = await mapper
+            .from(testModel1)
+            .innerJoin(testModel3, testModel1.id, testModel3.testModel1Id)
+            .select({
+                externalId: testModel1.externalId,
+                value2: testModel3.value
+            })
+            .orderBy(testModel3.id, 'asc')
+            .limit(1);
+
+        expect(data).to.deep.equal([
+            { externalId: testObject1.externalId, value2: testObject3_1.value }
+        ]);
     });
 });
 

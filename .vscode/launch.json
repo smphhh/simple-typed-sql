@@ -12,13 +12,13 @@
 			"type": "node",
 			"program": "${workspaceRoot}/node_modules/mocha/bin/_mocha",
 			"stopOnEntry": false,
-			"args": ["lib/**/__tests__/**/*.js"],
+			"args": ["--no-timeouts", "lib/**/__tests__/**/*.js"],
 			"cwd": "${workspaceRoot}",
 			"preLaunchTask": "build",
 			"request": "launch",
 			"runtimeExecutable": null,
 			"env": { "NODE_ENV": "production", "DEBUG": "" },
-			"externalConsole": false,
+			"console": "internalConsole",
 			"sourceMaps": true,
 			"outDir": "${workspaceRoot}/lib"
 		}

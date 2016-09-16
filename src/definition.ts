@@ -1,12 +1,12 @@
 
+export interface AttributeDefinitionMap {
+    [key: string]: AttributeDefinition
+}
+
 export interface Metadata {
     tableName: string;
-    attributes: {
-        [attributeName: string]: AttributeDefinition
-    };
-    fields: {
-        [fieldName: string]: AttributeDefinition
-    };
+    attributes: AttributeDefinitionMap;
+    fields: AttributeDefinitionMap;
 }
 
 export interface MetadataDefinition {
@@ -47,7 +47,8 @@ export function defineModel<InstanceType>(
         let attributeDefinition = {
             dataType: prototypeDefinition[attributeName]._type,
             attributeName: attributeName,
-            fieldName: prototypeDefinition[attributeName].fieldName || attributeName
+            fieldName: prototypeDefinition[attributeName].fieldName || attributeName,
+            tableName: tableName
         };
 
         // TODO: Check for duplicate field names
@@ -101,6 +102,7 @@ export interface AttributeDefinition {
     dataType: DataType;
     attributeName: string;
     fieldName?: string;
+    tableName: string;
 }
 
 export interface SerializationOptions {
@@ -111,6 +113,14 @@ export function getTableName<T>(definition: ModelDefinition<T>) {
     return definition.__metadata.tableName;
 }
 
+export function getAbsoluteFieldName(attributeDefinition: AttributeDefinition) {
+    return `${attributeDefinition.tableName}.${attributeDefinition.fieldName}`;
+}
+
+export function getAttributeDefinitions<T>(definition: ModelDefinition<T>) {
+    return getAttributes(definition).map(key => definition.__metadata.attributes[key]);
+}
+
 export function getAttributes<T>(definition: ModelDefinition<T>) {
     return Object.keys(definition.__metadata.attributes);
 }
@@ -119,8 +129,24 @@ export function getFieldNames<T>(definition: ModelDefinition<T>) {
     return Object.keys(definition.__metadata.fields);
 }
 
+export function getAbsoluteFieldNames<T>(definition: ModelDefinition<T>) {
+    return getAttributeDefinitions(definition).map(getAbsoluteFieldName);
+}
+
 export function getDataAttributes(data: any) {
     return Object.keys(data);
+}
+
+export function getIdentityAliasedName(name: string) {
+    return `${name} as ${name}`;
+}
+
+export function getAbsoluteFieldNameAttributeDefinitionMap<T>(model: ModelDefinition<T>) {
+    let map: AttributeDefinitionMap = {};
+    getAttributeDefinitions(model).map(definition => {
+        map[getAbsoluteFieldName(definition)] = definition;
+    });
+    return map;
 }
 
 export function serializeData<ModelDataType extends DataType, DataType>(
@@ -144,7 +170,7 @@ export function serializeData<ModelDataType extends DataType, DataType>(
 }
 
 export function deserializeData<ModelDataType>(
-    model: ModelDefinition<ModelDataType>,
+    fields: AttributeDefinitionMap,
     fieldData: any,
     serializationOptions: SerializationOptions
 ) {
@@ -152,8 +178,8 @@ export function deserializeData<ModelDataType>(
 
     let fieldNames = getDataAttributes(fieldData);
     for (let fieldName of fieldNames) {
-        let attributeDefinition = model.__metadata.fields[fieldName];
-        let fieldValue = fieldData[attributeDefinition.fieldName];
+        let attributeDefinition = fields[fieldName];
+        let fieldValue = fieldData[getAbsoluteFieldName(attributeDefinition)];
         if (serializationOptions.stringifyJson && attributeDefinition.dataType === 'json') {
             data[attributeDefinition.attributeName] = JSON.parse(fieldValue);
         } else if (attributeDefinition.dataType === 'datetime' && typeof fieldValue === 'number') {
