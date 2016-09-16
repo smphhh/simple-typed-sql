@@ -49,7 +49,8 @@ describe("Simple typed SQL", function () {
         {
             id: defineNumber(),
             booleanAttribute: defineBoolean({ fieldName: 'boolean_attribute' }),
-            datetimeAttribute: defineDatetime({ fieldName: 'datetime_attribute' })
+            datetimeAttribute: defineDatetime({ fieldName: 'datetime_attribute' }),
+            bigIntAttribute: defineNumber({ fieldName: 'big_int_attribute' })
         }
     );
 
@@ -65,7 +66,7 @@ describe("Simple typed SQL", function () {
     let testObject1 = { id: 1, externalId: 'a' };
     let testObject2 = { id: 2, externalId: 'b' };
 
-    let testObject11 = { id: 1, booleanAttribute: true, datetimeAttribute: new Date() };
+    let testObject11 = { id: 1, booleanAttribute: true, datetimeAttribute: new Date(), bigIntAttribute: 182739712 };
 
     let testObject3_1 = { id: 1, testModel1Id: 1, value: 'x' };
     let testObject3_2 = { id: 2, testModel1Id: 2, value: 'z' };
@@ -87,6 +88,7 @@ describe("Simple typed SQL", function () {
             table.increments('id').primary();
             table.boolean('boolean_attribute').notNullable();
             table.timestamp('datetime_attribute').notNullable();
+            table.bigInteger('big_int_attribute').notNullable();
         });
 
         await knexClient.schema.dropTableIfExists('test_model_3');
@@ -109,7 +111,7 @@ describe("Simple typed SQL", function () {
         expect(data).to.deep.equal([testObject1]);
     });
 
-    it("should support boolean and datetime fields", async function () {
+    it("should support boolean, datetime and bigint fields", async function () {
         await mapper
             .insertInto(testModel2, testObject11);
         let data = await mapper.selectAllFrom(testModel2);

@@ -180,12 +180,17 @@ export function deserializeData<ModelDataType>(
     for (let fieldName of fieldNames) {
         let attributeDefinition = fields[fieldName];
         let fieldValue = fieldData[getAbsoluteFieldName(attributeDefinition)];
-        if (serializationOptions.stringifyJson && attributeDefinition.dataType === 'json') {
-            data[attributeDefinition.attributeName] = JSON.parse(fieldValue);
-        } else if (attributeDefinition.dataType === 'datetime' && typeof fieldValue === 'number') {
-            data[attributeDefinition.attributeName] = new Date(fieldData[attributeDefinition.fieldName]);
+        let attributeName = attributeDefinition.attributeName;
+        let dataType = attributeDefinition.dataType;
+
+        if (serializationOptions.stringifyJson && dataType === 'json') {
+            data[attributeName] = JSON.parse(fieldValue);
+        } else if (dataType === 'datetime' && typeof fieldValue === 'number') {
+            data[attributeName] = new Date(fieldValue);
+        } else if (dataType === 'number' && typeof fieldValue === 'string') {
+            data[attributeName] = parseInt(fieldValue);
         } else {
-            data[attributeDefinition.attributeName] = fieldValue;
+            data[attributeName] = fieldValue;
         }
     }
 
