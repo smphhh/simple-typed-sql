@@ -1,4 +1,4 @@
-
+import * as Bluebird from 'bluebird';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as knex from 'knex';
@@ -328,6 +328,46 @@ describe("Simple typed SQL", function () {
         expect(data).to.deep.equal([
             { externalId: testObject1.externalId, value2: testObject3_1.value }
         ]);
+    });
+
+    it("should lock all joined model rows for update", async function () {
+        await mapper.insertInto(testModel1, testObject1);
+        await mapper.insertInto(testModel1, testObject2);
+
+        await mapper.insertInto(testModel3, testObject3_1);
+        await mapper.insertInto(testModel3, testObject3_2);
+
+        let modificationPromise = mapper.transaction(async (trxMapper) => {
+            let data = await trxMapper
+                .from(testModel1)
+                .innerJoin(testModel3, testModel1.id, testModel3.testModel1Id)
+                .select({
+                    externalId: testModel1.externalId,
+                    value2: testModel3.value
+                })
+                .whereEqual(testModel1.externalId, testObject1.externalId)
+                .forUpdate();
+
+            await Bluebird.delay(100);
+
+            await trxMapper
+                .updateWith(testModel1, { externalId: 'updated' })
+                .whereEqual(testModel1.externalId, testObject1.externalId);
+        });
+
+        await Bluebird.delay(50);
+
+        let data = await mapper.transaction(async (trxMapper) => {
+            return trxMapper
+                .selectAllFrom(testModel1)
+                .forUpdate()
+                .whereEqual(testModel1.externalId, testObject1.externalId);
+
+        });
+
+        expect(data.length).to.equal(0);
+
+        await modificationPromise;
     });
 });
 
