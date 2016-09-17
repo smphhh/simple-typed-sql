@@ -266,12 +266,21 @@ export class SelectQuery<ResultType> extends WhereQuery {
         return this;
     }
 
-    async getOne() {
+    async tryGetOne(): Promise<ResultType> {
         let data = await this.execute();
         if (data.length === 1) {
             return data[0];
         } else {
+            return null;
+        }
+    }
+
+    async getOne() {
+        let data = await this.tryGetOne();
+        if (data === null) {
             throw new Error("Expected exactly one row");
+        } else {
+            return data;
         }
     }
 
