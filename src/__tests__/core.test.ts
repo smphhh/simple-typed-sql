@@ -369,6 +369,21 @@ describe("Simple typed SQL", function () {
 
         await modificationPromise;
     });
+
+    it("should resolve ambiguous field names in join query where clauses", async function () {
+        await mapper.insertInto(testModel1, testObject1);
+        await mapper.insertInto(testModel1, testObject2);
+        await mapper.insertInto(testModel3, testObject3_1);
+        await mapper.insertInto(testModel3, testObject3_2);
+
+        let data = await mapper
+            .from(testModel1)
+            .innerJoin(testModel3, testModel1.id, testModel3.testModel1Id)
+            .select({ value2: testModel3.value })
+            .whereEqual(testModel1.id, testObject2.id);
+
+        expect(data).to.deep.equal([{ value2: testObject3_2.value}]);
+    });
 });
 
 
