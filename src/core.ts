@@ -174,8 +174,11 @@ export class SimpleFromQuery extends BaseQuery {
             if (!this.models.has(tableName)) {
                 throw new Error(`Invalid select expression for attribute "${key}": the table ${tableName} is missing a from-clause entry.`);
             }
-            attributeDefinition.attributeName = key;
-            fieldMap[getAbsoluteFieldName(attributeDefinition)] = attributeDefinition;
+            fieldMap[getAbsoluteFieldName(attributeDefinition)] = Object.assign(
+                {},
+                attributeDefinition,
+                { attributeName: key }
+            );
         });
 
         let knexQuery = this.knexQuery.select(

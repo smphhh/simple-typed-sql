@@ -268,6 +268,22 @@ describe("Simple typed SQL", function () {
         expect(data).to.deep.equal([testObject2]);
     });
 
+    it("should support queries with custom attribute selects", async function () {
+        await mapper.insertInto(testModel1, testObject1);
+
+        let data = await mapper
+            .from(testModel1)
+            .select({
+                id2: testModel1.id,
+                externalId2: testModel1.externalId
+            })
+            .getOne();
+
+        expect(data).to.deep.equal({ id2: testObject1.id, externalId2: testObject1.externalId });
+
+        expect(await mapper.findOneByKey(testModel1, { id: testObject1.id })).to.deep.equal(testObject1);
+    });
+
     it("should support simple join queries", async function () {
         await mapper.insertInto(testModel1, testObject1);
         await mapper.insertInto(testModel1, testObject2);
