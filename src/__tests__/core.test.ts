@@ -50,7 +50,8 @@ describe("Simple typed SQL", function () {
             id: defineNumber(),
             booleanAttribute: defineBoolean({ fieldName: 'boolean_attribute' }),
             datetimeAttribute: defineDatetime({ fieldName: 'datetime_attribute' }),
-            bigIntAttribute: defineNumber({ fieldName: 'big_int_attribute' })
+            bigIntAttribute: defineNumber({ fieldName: 'big_int_attribute' }),
+            dateAttribute: defineDatetime({ fieldName: 'date_attribute' })
         }
     );
 
@@ -66,7 +67,12 @@ describe("Simple typed SQL", function () {
     let testObject1 = { id: 1, externalId: 'a' };
     let testObject2 = { id: 2, externalId: 'b' };
 
-    let testObject11 = { id: 1, booleanAttribute: true, datetimeAttribute: new Date(), bigIntAttribute: 182739712 };
+    let testObject11 = {
+        id: 1, booleanAttribute: true,
+        datetimeAttribute: new Date(),
+        bigIntAttribute: 182739712,
+        dateAttribute: new Date(2016, 1, 20)
+    };
 
     let testObject3_1 = { id: 1, testModel1Id: 1, value: 'x' };
     let testObject3_2 = { id: 2, testModel1Id: 2, value: 'z' };
@@ -89,6 +95,7 @@ describe("Simple typed SQL", function () {
             table.boolean('boolean_attribute').notNullable();
             table.timestamp('datetime_attribute').notNullable();
             table.bigInteger('big_int_attribute').notNullable();
+            table.date('date_attribute').notNullable();
         });
 
         await knexClient.schema.dropTableIfExists('test_model_3');
