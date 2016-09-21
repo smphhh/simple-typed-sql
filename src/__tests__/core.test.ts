@@ -111,6 +111,16 @@ describe("Simple typed SQL", function () {
         expect(data).to.deep.equal([testObject1]);
     });
 
+    it("should allow inserts with extra data attributes", async function () {
+        await mapper
+            .insertInto(testModel1, Object.assign({ extra: 'a' }, testObject1));
+
+        let data = await mapper
+            .selectAllFrom(testModel1);
+
+        expect(data).to.deep.equal([testObject1]);
+    });
+
     it("should support boolean, datetime and bigint fields", async function () {
         await mapper
             .insertInto(testModel2, testObject11);

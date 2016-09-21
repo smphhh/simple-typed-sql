@@ -40,7 +40,7 @@ export class BaseMapper {
         );
     }
 
-    updateWith<T extends U, U>(model: ModelDefinition<T>, data: T) {
+    updateWith<T extends U, U>(model: ModelDefinition<T>, data: U) {
         let tableName = getTableName(model);
         let fieldData = serializeData(model, data, this.options);
 
@@ -49,15 +49,15 @@ export class BaseMapper {
         return new UpdateQuery(model, query, this.options);
     }
 
-    insertInto<T extends U, U>(model: ModelDefinition<T>, data: T) {
+    insertInto<T, U extends T>(model: ModelDefinition<T>, data: U) {
         let query = this.knexBuilder
-            .insert(serializeData(model, data, this.options))
+            .insert(serializeData(model, data as T, this.options))
             .into(model.__metadata.tableName);
 
         return new InsertQuery(model, query, this.options);
     }
 
-    deleteFrom<T extends U, U>(model: ModelDefinition<T>) {
+    deleteFrom<T>(model: ModelDefinition<T>) {
         let query = this.knexBuilder
             .from(getTableName(model))
             .del();

@@ -159,6 +159,11 @@ export function serializeData<ModelDataType extends DataType, DataType>(
     let fieldData: any = {};
     for (let attributeName of attributeNames) {
         let attributeDefinition = model.__metadata.attributes[attributeName];
+        // Skip extra attributes
+        if (attributeDefinition === undefined) {
+            continue;
+        }
+
         if (serializationOptions.stringifyJson && attributeDefinition.dataType === 'json') {
             fieldData[attributeDefinition.fieldName] = JSON.stringify(data[attributeName]);
         } else {
