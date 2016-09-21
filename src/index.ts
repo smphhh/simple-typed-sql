@@ -5,7 +5,8 @@ export {
     defineModel,
     defineNumber,
     defineString,
-    defineBoolean
+    defineBoolean,
+    ModelDefinition
 } from './definition';
 
 export {
