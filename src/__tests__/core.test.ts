@@ -3,15 +3,18 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as knex from 'knex';
 
-import {Mapper} from '../core';
 import {
     defineBoolean,
     defineDatetime,
     defineJson,
     defineModel,
     defineNumber,
-    defineString
-} from '../definition';
+    defineString,
+    Mapper,
+    and,
+    or,
+    comparison
+} from '../';
 
 chai.use(chaiAsPromised);
 
@@ -309,7 +312,7 @@ describe("Simple typed SQL", function () {
 
         let data = await mapper
             .from(testModel1)
-            .innerJoin(testModel3, testModel1.id, testModel3.testModel1Id)
+            .innerJoinEqual(testModel3, testModel1.id, testModel3.testModel1Id)
             .select({
                 externalId: testModel1.externalId,
                 value2: testModel3.value
@@ -329,7 +332,7 @@ describe("Simple typed SQL", function () {
 
         let data = await mapper
             .from(testModel1)
-            .innerJoin(testModel3, testModel1.id, testModel3.testModel1Id)
+            .innerJoinEqual(testModel3, testModel1.id, testModel3.testModel1Id)
             .select({
                 externalId: testModel1.externalId,
                 value2: testModel3.value
@@ -350,7 +353,7 @@ describe("Simple typed SQL", function () {
 
         let data = await mapper
             .from(testModel1)
-            .innerJoin(testModel3, testModel1.id, testModel3.testModel1Id)
+            .innerJoinEqual(testModel3, testModel1.id, testModel3.testModel1Id)
             .select({
                 externalId: testModel1.externalId,
                 value2: testModel3.value
@@ -373,7 +376,7 @@ describe("Simple typed SQL", function () {
         let modificationPromise = mapper.transaction(async (trxMapper) => {
             let data = await trxMapper
                 .from(testModel1)
-                .innerJoin(testModel3, testModel1.id, testModel3.testModel1Id)
+                .innerJoinEqual(testModel3, testModel1.id, testModel3.testModel1Id)
                 .select({
                     externalId: testModel1.externalId,
                     value2: testModel3.value
@@ -411,7 +414,7 @@ describe("Simple typed SQL", function () {
 
         let data = await mapper
             .from(testModel1)
-            .innerJoin(testModel3, testModel1.id, testModel3.testModel1Id)
+            .innerJoinEqual(testModel3, testModel1.id, testModel3.testModel1Id)
             .select({ value2: testModel3.value })
             .whereEqual(testModel1.id, testObject2.id);
 

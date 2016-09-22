@@ -44,12 +44,11 @@ export function defineModel<InstanceType>(
 
     let attributeNames = getDataAttributes(prototypeDefinition);
     for (let attributeName of attributeNames) {
-        let attributeDefinition = {
-            dataType: prototypeDefinition[attributeName]._type,
-            attributeName: attributeName,
-            fieldName: prototypeDefinition[attributeName].fieldName || attributeName,
-            tableName: tableName
-        };
+        let attributeDefinition = new AttributeDefinition();
+        attributeDefinition.dataType = prototypeDefinition[attributeName]._type;
+        attributeDefinition.attributeName = attributeName;
+        attributeDefinition.fieldName = prototypeDefinition[attributeName].fieldName || attributeName;
+        attributeDefinition.tableName = tableName;
 
         // TODO: Check for duplicate field names
         //definition.prototypeDefinition[attributeName] = attributeDefinition;
@@ -98,10 +97,10 @@ export interface AttributeOptions {
 
 export type DataType = 'number' | 'string' | 'json' | 'datetime';
 
-export interface AttributeDefinition {
+export class AttributeDefinition {
     dataType: DataType;
     attributeName: string;
-    fieldName?: string;
+    fieldName: string;
     tableName: string;
 }
 

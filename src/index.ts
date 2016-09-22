@@ -12,3 +12,12 @@ export {
 export {
     Mapper
 } from './core';
+
+export {
+    and,
+    or,
+    comparison,
+    equal,
+    ComparisonOperator,
+    LogicalOperator
+} from './condition';

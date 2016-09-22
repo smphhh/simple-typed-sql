@@ -17,9 +17,14 @@ import {
     SerializationOptions
 } from './definition';
 
+import {
+    ComparisonOperator,
+    ConditionClause
+} from './condition';
 
 export class BaseMapper {
     constructor(
+        protected knexClient: knex,
         private knexBuilder: knex.QueryInterface,
         protected options: SerializationOptions
     ) {
@@ -34,6 +39,7 @@ export class BaseMapper {
         let query = this.knexBuilder.select(selectColumns).from(tableName);
 
         return new SelectQuery<T>(
+            this.knexClient,
             getAbsoluteFieldNameAttributeDefinitionMap(model),
             query,
             this.options
@@ -46,7 +52,7 @@ export class BaseMapper {
 
         let query = this.knexBuilder.table(tableName).update(fieldData);
 
-        return new UpdateQuery(model, query, this.options);
+        return new UpdateQuery(this.knexClient, model, query, this.options);
     }
 
     insertInto<T, U extends T>(model: ModelDefinition<T>, data: U) {
@@ -54,7 +60,7 @@ export class BaseMapper {
             .insert(serializeData(model, data as T, this.options))
             .into(model.__metadata.tableName);
 
-        return new InsertQuery(model, query, this.options);
+        return new InsertQuery(this.knexClient, model, query, this.options);
     }
 
     deleteFrom<T>(model: ModelDefinition<T>) {
@@ -62,7 +68,7 @@ export class BaseMapper {
             .from(getTableName(model))
             .del();
         
-        return new DeleteQuery(model, query, this.options);
+        return new DeleteQuery(this.knexClient, model, query, this.options);
     }
 
     truncate<T>(model: ModelDefinition<T>): Promise<void> {
@@ -71,7 +77,7 @@ export class BaseMapper {
 
     from<T>(model: ModelDefinition<T>) {
         let query = this.knexBuilder.from(getTableName(model));
-        return new SimpleFromQuery(model, query, this.options);
+        return new SimpleFromQuery(this.knexClient, model, query, this.options);
     }
 
     async tryFindOneByKey<T extends U, U>(model: ModelDefinition<T>, key: U) {
@@ -106,30 +112,24 @@ export class Mapper extends BaseMapper {
     //private query: knex.QueryBuilder;
 
     constructor(
-        private knexClient: knex,
+        knexClient: knex,
         options: SerializationOptions
     ) {
-        super(knexClient, options);
+        super(knexClient, knexClient, options);
     }
 
     transaction<T>(callback: (transactionMapper: BaseMapper) => Promise<T>) {
         return Promise.resolve<T>(this.knexClient.transaction((trx) => {
             let t: knex.Transaction;
-            let transactionMapper = new BaseMapper(trx, this.options);
+            let transactionMapper = new BaseMapper(this.knexClient, trx, this.options);
             return callback(transactionMapper);
         }));
     }
 }
 
-type ComparisonOperator = '<' | '>' | '<=' | '>=' | '=';
-
-export interface WhereClause {
-    operator: string;
-    operands: WhereClause[];
-}
-
 export class BaseQuery {
     constructor(
+        protected knexClient: knex,
         protected knexQuery: knex.QueryBuilder
     ) {
 
@@ -140,30 +140,45 @@ export class BaseQuery {
     }
 }
 
+export type JoinType = "innerJoin" | "leftOuterJoin" | "rightOuterJoin";
+
 export class SimpleFromQuery extends BaseQuery {
     private models: Map<string, ModelDefinition<any>>;
 
     constructor(
+        knexClient: knex,
         model: ModelDefinition<any>,
         knexQuery: knex.QueryBuilder,
         private serializationOptions: SerializationOptions
     ) {
-        super(knexQuery);
+        super(knexClient, knexQuery);
 
         this.models = new Map();
         this.models.set(getTableName(model), model);
     }
 
-    innerJoin<T>(joinModel: ModelDefinition<any>, field1: T, field2: T) {
-        return this.join("innerJoin", joinModel, field1, field2);
+    innerJoin(joinModel: ModelDefinition<any>, condition: ConditionClause) {
+        return this.conditionJoin("innerJoin", joinModel, condition);
     }
 
-    leftOuterJoin<T>(joinModel: ModelDefinition<any>, field1: T, field2: T) {
-        return this.join("leftOuterJoin", joinModel, field1, field2);
+    innerJoinEqual<T>(joinModel: ModelDefinition<any>, field1: T, field2: T) {
+        return this.simpleJoin("innerJoin", joinModel, field1, field2);
     }
 
-    rightOuterJoin<T>(joinModel: ModelDefinition<any>, field1: T, field2: T) {
-        return this.join("rightOuterJoin", joinModel, field1, field2);
+    leftOuterJoin(joinModel: ModelDefinition<any>, condition: ConditionClause) {
+        return this.conditionJoin("leftOuterJoin", joinModel, condition);
+    }
+
+    leftOuterJoinEqual<T>(joinModel: ModelDefinition<any>, field1: T, field2: T) {
+        return this.simpleJoin("leftOuterJoin", joinModel, field1, field2);
+    }
+
+    rightOuterJoin(joinModel: ModelDefinition<any>, condition: ConditionClause) {
+        return this.conditionJoin("rightOuterJoin", joinModel, condition);
+    }
+
+    rightOuterJoinEqual<T>(joinModel: ModelDefinition<any>, field1: T, field2: T) {
+        return this.simpleJoin("rightOuterJoin", joinModel, field1, field2);
     }
 
     select<T>(selectClause: T) {
@@ -174,21 +189,25 @@ export class SimpleFromQuery extends BaseQuery {
             if (!this.models.has(tableName)) {
                 throw new Error(`Invalid select expression for attribute "${key}": the table ${tableName} is missing a from-clause entry.`);
             }
-            fieldMap[getAbsoluteFieldName(attributeDefinition)] = Object.assign(
-                {},
+
+            let newAttributeDefinition = new AttributeDefinition();
+            Object.assign(
+                newAttributeDefinition,
                 attributeDefinition,
                 { attributeName: key }
             );
+
+            fieldMap[getAbsoluteFieldName(attributeDefinition)] = newAttributeDefinition;
         });
 
         let knexQuery = this.knexQuery.select(
             Object.keys(fieldMap).map(fieldName => `${fieldName} as ${fieldName}`)
         );
 
-        return new SelectQuery<T>(fieldMap, knexQuery, this.serializationOptions);
+        return new SelectQuery<T>(this.knexClient, fieldMap, knexQuery, this.serializationOptions);
     }
 
-    private join<T>(joinType: "innerJoin" | "leftOuterJoin" | "rightOuterJoin", joinModel: ModelDefinition<any>, field1: T, field2: T) {
+    private simpleJoin<T>(joinType: JoinType, joinModel: ModelDefinition<any>, field1: T, field2: T) {
         let attribute1: AttributeDefinition = field1 as any;
         let attribute2: AttributeDefinition = field2 as any;
         let joinTableName = getTableName(joinModel);
@@ -204,17 +223,34 @@ export class SimpleFromQuery extends BaseQuery {
 
         return this;
     }
+
+    private conditionJoin(joinType: "innerJoin" | "leftOuterJoin" | "rightOuterJoin", joinModel: ModelDefinition<any>, conditionClause: ConditionClause) {
+        let joinTableName = getTableName(joinModel);
+        if (this.models.has(joinTableName)) {
+            throw new Error(`Invalid join. The same table (${joinTableName}) can be referred to in one from-clause only in SimpleFromQuery.`);
+        }
+        this.models.set(joinTableName, joinModel);
+
+        this.knexQuery = this.knexQuery[joinType](
+            getTableName(joinModel),
+            conditionClause.buildJoinConditionClause(this.knexClient)
+        );
+
+        return this;
+    }
 }
 
 export class WhereQuery extends BaseQuery {
     constructor(
+        knexClient: knex,
         knexQuery: knex.QueryBuilder
     ) {
-        super(knexQuery);
+        super(knexClient, knexQuery);
     }
 
-    where(clause: WhereClause) {
-        throw new Error("Not implemented");
+    where(clause: ConditionClause) {
+        this.knexQuery = this.knexQuery.where(clause.buildWhereConditionClause(this.knexClient));
+        return this;
     }
 
     whereEqual<T>(attribute: T, value: T) {
@@ -246,11 +282,12 @@ export class WhereQuery extends BaseQuery {
 
 export class SelectQuery<ResultType> extends WhereQuery {
     constructor(
+        knexClient: knex,
         private fields: AttributeDefinitionMap,
         knexQuery: knex.QueryBuilder,
         private serializationOptions: SerializationOptions
     ) {
-        super(knexQuery);
+        super(knexClient, knexQuery);
     }
 
     forUpdate() {
@@ -299,11 +336,12 @@ export class SelectQuery<ResultType> extends WhereQuery {
 
 export class UpdateQuery<UpdateDataType> extends WhereQuery implements PromiseLike<void> {
     constructor(
+        knexClient: knex,
         private model: ModelDefinition<UpdateDataType>,
         knexQuery: knex.QueryBuilder,
         private serializationOptions: SerializationOptions
     ) {
-        super(knexQuery);
+        super(knexClient, knexQuery);
     }
     
     async execute() {
@@ -318,11 +356,12 @@ export class UpdateQuery<UpdateDataType> extends WhereQuery implements PromiseLi
 
 export class DeleteQuery<UpdateDataType> extends WhereQuery implements PromiseLike<void> {
     constructor(
+        knexClient: knex,
         private model: ModelDefinition<UpdateDataType>,
         knexQuery: knex.QueryBuilder,
         private serializationOptions: SerializationOptions
     ) {
-        super(knexQuery);
+        super(knexClient, knexQuery);
     }
     
     async execute() {
@@ -337,11 +376,12 @@ export class DeleteQuery<UpdateDataType> extends WhereQuery implements PromiseLi
 
 export class InsertQuery<InsertDataType> extends BaseQuery implements PromiseLike<void> {
     constructor(
+        knexClient: knex,
         private model: ModelDefinition<InsertDataType>,
         knexQuery: knex.QueryBuilder,
         private serializationOptions: SerializationOptions
     ) {
-        super(knexQuery);
+        super(knexClient, knexQuery);
     }
 
     async execute() {
