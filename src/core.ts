@@ -58,7 +58,16 @@ export class BaseMapper {
     insertInto<T, U extends T>(model: ModelDefinition<T>, data: U) {
         let query = this.knexBuilder
             .insert(serializeData(model, data as T, this.options))
-            .into(model.__metadata.tableName);
+            .into(getTableName(model));
+
+        return new InsertQuery(this.knexClient, model, query, this.options);
+    }
+
+    batchInsertInto<T, U extends T>(model: ModelDefinition<T>, data: U[]) {
+        let serializedData = data.map(item => serializeData(model, item as T, this.options));
+        let query = this.knexBuilder
+            .insert(serializedData)
+            .into(getTableName(model));
 
         return new InsertQuery(this.knexClient, model, query, this.options);
     }
@@ -224,7 +233,7 @@ export class SimpleFromQuery extends BaseQuery {
         return this;
     }
 
-    private conditionJoin(joinType: "innerJoin" | "leftOuterJoin" | "rightOuterJoin", joinModel: ModelDefinition<any>, conditionClause: ConditionClause) {
+    private conditionJoin(joinType: JoinType, joinModel: ModelDefinition<any>, conditionClause: ConditionClause) {
         let joinTableName = getTableName(joinModel);
         if (this.models.has(joinTableName)) {
             throw new Error(`Invalid join. The same table (${joinTableName}) can be referred to in one from-clause only in SimpleFromQuery.`);

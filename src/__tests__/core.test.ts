@@ -131,6 +131,32 @@ describe("Simple typed SQL", function () {
         expect(data).to.deep.equal([testObject1]);
     });
 
+    it("should support batch inserts", async function () {
+        await mapper.batchInsertInto(testModel1, [
+            testObject1,
+            testObject2
+        ]);
+
+        let data = await mapper
+            .selectAllFrom(testModel1)
+            .orderBy(testModel1.id, 'asc');
+
+        expect(data).to.deep.equal([testObject1, testObject2]);
+    });
+
+    it("should support batch inserts with extra attributes", async function () {
+        await mapper.batchInsertInto(testModel1, [
+            testObject1,
+            Object.assign({ extra: 1 }, testObject2)
+        ]);
+
+        let data = await mapper
+            .selectAllFrom(testModel1)
+            .orderBy(testModel1.id, 'asc');
+
+        expect(data).to.deep.equal([testObject1, testObject2]);
+    });
+
     it("should support boolean, datetime and bigint fields", async function () {
         await mapper
             .insertInto(testModel2, testObject11);
