@@ -40,10 +40,10 @@ let testDatabaseOptions = {
 describe("Simple typed SQL", function () {
 
     let testModel1 = defineModel(
-        'test_model',
+        'test_model_with_some_extra_padding_plus_some_more',
         {
             id: defineNumber(),
-            externalId: defineString({ fieldName: 'external_id' })
+            externalId: defineString({ fieldName: 'external_id_with_some_extra_padding_plus_some_more' })
         }
     );
 
@@ -86,10 +86,10 @@ describe("Simple typed SQL", function () {
     beforeEach(async function () {
         knexClient = knex(testDatabaseOptions);
 
-        await knexClient.schema.dropTableIfExists('test_model');
-        await knexClient.schema.createTable('test_model', function (table) {
+        await knexClient.schema.dropTableIfExists('test_model_with_some_extra_padding_plus_some_more');
+        await knexClient.schema.createTable('test_model_with_some_extra_padding_plus_some_more', function (table) {
             table.increments('id').primary();
-            table.string('external_id').notNullable().unique();
+            table.string('external_id_with_some_extra_padding_plus_some_more').notNullable().unique();
         });
 
         await knexClient.schema.dropTableIfExists('test_model_2');

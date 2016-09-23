@@ -1,4 +1,6 @@
 
+let md5 = require('md5');
+
 export interface AttributeDefinitionMap {
     [key: string]: AttributeDefinition
 }
@@ -132,18 +134,26 @@ export function getAbsoluteFieldNames<T>(definition: ModelDefinition<T>) {
     return getAttributeDefinitions(definition).map(getAbsoluteFieldName);
 }
 
+export function getAliasedName(name: string) {
+    if (name.length > 60) {
+        return md5(name);
+    } else {
+        return name;
+    }
+}
+
 export function getDataAttributes(data: any) {
     return Object.keys(data);
 }
 
 export function getIdentityAliasedName(name: string) {
-    return `${name} as ${name}`;
+    return `${name} as ${getAliasedName(name)}`;
 }
 
 export function getAbsoluteFieldNameAttributeDefinitionMap<T>(model: ModelDefinition<T>) {
     let map: AttributeDefinitionMap = {};
     getAttributeDefinitions(model).map(definition => {
-        map[getAbsoluteFieldName(definition)] = definition;
+        map[getAliasedName(getAbsoluteFieldName(definition))] = definition;
     });
     return map;
 }
@@ -180,10 +190,15 @@ export function deserializeData<ModelDataType>(
 ) {
     let data: any = {};
 
+    let outputFields: AttributeDefinitionMap = {};
+    for (let fieldName in fields) {
+        outputFields[getAliasedName(fieldName)] = fields[fieldName];
+    }
+
     let fieldNames = getDataAttributes(fieldData);
     for (let fieldName of fieldNames) {
-        let attributeDefinition = fields[fieldName];
-        let fieldValue = fieldData[getAbsoluteFieldName(attributeDefinition)];
+        let attributeDefinition = outputFields[fieldName];
+        let fieldValue = fieldData[getAliasedName(getAbsoluteFieldName(attributeDefinition))];
         let attributeName = attributeDefinition.attributeName;
         let dataType = attributeDefinition.dataType;
 

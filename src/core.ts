@@ -210,7 +210,7 @@ export class SimpleFromQuery extends BaseQuery {
         });
 
         let knexQuery = this.knexQuery.select(
-            Object.keys(fieldMap).map(fieldName => `${fieldName} as ${fieldName}`)
+            Object.keys(fieldMap).map(getIdentityAliasedName)
         );
 
         return new SelectQuery<T>(this.knexClient, fieldMap, knexQuery, this.serializationOptions);
