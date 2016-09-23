@@ -157,6 +157,29 @@ describe("Simple typed SQL", function () {
         expect(data).to.deep.equal([testObject1, testObject2]);
     });
 
+    it("should support inserts with returningAll clauses", async function () {
+        let data = await mapper
+            .insertInto(testModel1, testObject1)
+            .returningAll();
+
+        expect(data).to.deep.equal([testObject1]);
+    });
+
+    it("should support inserts with returningAll clauses and default values", async function () {
+        let testObject = {
+            id: undefined,
+            externalId: 'g'
+        };
+
+        let data = await mapper
+            .insertInto(testModel1, testObject)
+            .returningAll();
+
+        expect(data.length).to.equal(1);
+        expect(data[0].externalId).to.equal(testObject.externalId);
+        expect(data[0].id).to.be.a('number');
+    });
+
     it("should support boolean, datetime and bigint fields", async function () {
         await mapper
             .insertInto(testModel2, testObject11);

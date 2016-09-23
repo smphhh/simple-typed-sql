@@ -393,6 +393,18 @@ export class InsertQuery<InsertDataType> extends BaseQuery implements PromiseLik
         super(knexClient, knexQuery);
     }
 
+    returningAll() {
+        let returnColumns = getAbsoluteFieldNames(this.model).map(getIdentityAliasedName);
+        let knexQuery = this.knexQuery.returning(returnColumns);
+
+        return new ReturningInsertQuery<InsertDataType>(
+            this.knexClient,
+            knexQuery,
+            getAbsoluteFieldNameAttributeDefinitionMap(this.model),
+            this.serializationOptions
+        );
+    }
+
     async execute() {
         let queryResults: any[] = await this.knexQuery;
         return;
@@ -400,5 +412,25 @@ export class InsertQuery<InsertDataType> extends BaseQuery implements PromiseLik
 
     then<TResult>(onfulfilled?: () => TResult | PromiseLike<TResult>, onrejected?: (reason: any) => TResult | PromiseLike<TResult>): PromiseLike<TResult> {
         return this.knexQuery.then(onfulfilled, onrejected);
+    }
+}
+
+export class ReturningInsertQuery<ResultType> extends BaseQuery {
+    constructor(
+        knexClient: knex,
+        knexQuery: knex.QueryBuilder,
+        private fields: AttributeDefinitionMap,
+        private serializationOptions: SerializationOptions
+    ) {
+        super(knexClient, knexQuery);
+    }
+
+    async execute() {
+        let queryResults: any[] = await this.knexQuery;
+        return queryResults.map(result => deserializeData<ResultType>(this.fields, result, this.serializationOptions));
+    }
+
+    then<TResult>(onfulfilled?: (value: ResultType[]) => TResult | PromiseLike<TResult>, onrejected?: (reason: any) => TResult | PromiseLike<TResult>): PromiseLike<TResult> {
+        return this.execute().then(onfulfilled, onrejected);
     }
 }
