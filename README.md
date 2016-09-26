@@ -52,7 +52,9 @@ Select all columns from table:
 let fooList = await mapper.selectAllFrom(fooMapping);
 
 console.log(fooList[0].fooCount); // 5
-console.log(fooList[0].nonExisting); // Compile error in TypeScript
+/* Compile error in TypeScript:
+console.log(fooList[0].nonExisting);
+*/
 ```
 
 Simple where clause
@@ -64,11 +66,11 @@ await mapper.insertInto(fooMapping, {
   fooCount: 2
 });
 
-let bigFoos = await mapper
+let littleFoos = await mapper
   .selectAllFrom(fooMapping)
   .whereLessThan(fooMapping.fooCount, 3);
   
-console.log(bigFoos); /*
+console.log(littleFoos); /*
 [{
   id: 2,
   name: "foo2",
