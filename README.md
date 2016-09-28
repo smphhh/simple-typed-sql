@@ -1,6 +1,17 @@
 # Simple Typed SQL
 
 Experimental object-SQL mapper based on Knex.js with partial type safety when used with TypeScript.
+> Never refer to SQL table columns using strings again.
+
+Supports:
+- Select, insert and update queries
+- Complex where clauses
+- Joins with complex join conditions
+- Transactions
+
+Upcoming:
+- Aggregation functions and group by
+- Select expressions
 
 ## Installation
 
@@ -25,13 +36,13 @@ Define mapping to a SQL table
 
 ```typescript
 let fooMapping = sqlMapper.defineModel(
-  'foo_table_name',
-  {
-    id: sqlMapper.defineNumber(),
-    name: sqlMapper.defineString(),
-    createdTime: sqlMapper.defineDatetime({ fieldName: 'created_time' }),
-    fooCount: sqlMapper.defineNumber({ fieldName: 'foo_count' })
-  }
+    'foo_table_name',
+    {
+        id: sqlMapper.defineNumber(),
+        name: sqlMapper.defineString(),
+        createdTime: sqlMapper.defineDatetime({ fieldName: 'created_time' }),
+        fooCount: sqlMapper.defineNumber({ fieldName: 'foo_count' })
+    }
 );
 ```
 
@@ -40,10 +51,10 @@ let fooMapping = sqlMapper.defineModel(
 Insert data:
 ```typescript
 await mapper.insertInto(fooMapping, {
-  id: 1,
-  name: "foo1",
-  createdTime: new Date(),
-  fooCount: 5
+    id: 1,
+    name: "foo1",
+    createdTime: new Date(),
+    fooCount: 5
 });
 ```
 
@@ -60,22 +71,22 @@ console.log(fooList[0].nonExisting);
 Simple where clause
 ```typescript
 await mapper.insertInto(fooMapping, {
-  id: 2,
-  name: "foo2",
-  createdTime: new Date(),
-  fooCount: 2
+    id: 2,
+    name: "foo2",
+    createdTime: new Date(),
+    fooCount: 2
 });
 
 let littleFoos = await mapper
-  .selectAllFrom(fooMapping)
-  .whereLessThan(fooMapping.fooCount, 3);
-  
+    .selectAllFrom(fooMapping)
+    .whereLessThan(fooMapping.fooCount, 3);
+
 console.log(littleFoos); /*
 [{
-  id: 2,
-  name: "foo2",
-  createdTime: "Sun Sep 25 2016 22:18:53 GMT+0300 (FLE Daylight Time)",
-  fooCount: 2
+    id: 2,
+    name: "foo2",
+    createdTime: "Sun Sep 25 2016 22:18:53 GMT+0300 (FLE Daylight Time)",
+    fooCount: 2
 }]*/
 ```
 
