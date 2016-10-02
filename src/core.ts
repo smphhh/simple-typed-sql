@@ -132,7 +132,7 @@ export class Mapper extends BaseMapper {
 
     constructor(
         knexClient: knex,
-        options: SerializationOptions
+        options: SerializationOptions = {}
     ) {
         super(knexClient, knexClient, options);
     }

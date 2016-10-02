@@ -219,7 +219,7 @@ describe("Simple typed SQL condition", function () {
             ))
             .select({ value2: testMapping3.value });
 
-        console.log(query.toString());
+        //console.log(query.toString());
 
         expect(await query).to.deep.equal([{ value2: testObject3_1.value }]);
     });

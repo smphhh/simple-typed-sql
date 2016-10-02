@@ -29,7 +29,7 @@ let knexClient = knex(...);
 
 import * as sqlMapper from 'simple-typed-rpc'
 
-let mapper = new sqlMapper.Mapper(knexClient, {});
+let mapper = new sqlMapper.Mapper(knexClient);
 ```
 
 Define mapping to a SQL table

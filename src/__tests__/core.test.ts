@@ -108,7 +108,7 @@ describe("Simple typed SQL", function () {
             table.string('value').notNullable();
         });
 
-        mapper = new Mapper(knexClient, { stringifyJson: false });
+        mapper = new Mapper(knexClient);
     });
 
     it("should allow inserting and selecting simple data", async function () {
