@@ -95,7 +95,7 @@ export class BaseMappingData<T> {
 
 export class WrappedMappingData<T> {
     constructor(
-        private __mapping: BaseMappingData<T>
+        protected __mapping: BaseMappingData<T>
     ) {
     }
 
