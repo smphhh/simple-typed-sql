@@ -4,9 +4,7 @@ let md5 = require('md5');
 import {
     AttributeDefinition,
     AttributeDefinitionMap,
-    defineModel,
-    Metadata,
-    PrototypeDefinition
+    Metadata
 } from './definition';
 
 export class BaseMappingData<T> {
@@ -17,9 +15,29 @@ export class BaseMappingData<T> {
         tableName: string,
         prototypeDefinition: T
     ) {
-        let model = defineModel(tableName, prototypeDefinition);
-        this.__metadata = model.__metadata;
-        this.__prototype = model.__prototypes.instance;
+        let metadata: Metadata = {
+            tableName: tableName,
+            attributes: {},
+            fields: {}
+        };
+
+        let attributeNames = Object.keys(prototypeDefinition);
+
+        for (let attributeName of attributeNames) {
+            let attributeDefinition = new AttributeDefinition();
+            attributeDefinition.dataType = prototypeDefinition[attributeName]._type;
+            attributeDefinition.attributeName = attributeName;
+            attributeDefinition.fieldName = prototypeDefinition[attributeName].fieldName || attributeName;
+            attributeDefinition.tableName = tableName;
+
+            // TODO: Check for duplicate field names
+            //definition.prototypeDefinition[attributeName] = attributeDefinition;
+            metadata.attributes[attributeName] = attributeDefinition;
+            metadata.fields[attributeDefinition.fieldName] = attributeDefinition;
+        }
+
+        this.__metadata = metadata;
+        this.__prototype = {} as T;
     }
 
     getAbsoluteFieldNameAttributeDefinitionMap() {
@@ -64,6 +82,10 @@ export class BaseMappingData<T> {
         } else {
             return name;
         }
+    }
+
+    static getIdentityAliasedName(name: string) {
+        return `${name} as ${BaseMappingData.getAliasedName(name)}`;
     }
 }
 

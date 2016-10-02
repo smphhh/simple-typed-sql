@@ -1,9 +1,5 @@
 import {
     AttributeDefinitionMap,
-    getAbsoluteFieldName,
-    getAliasedName,
-    getDataAttributes,
-    ModelDefinition,
     SerializationOptions
 } from './definition';
 
@@ -16,7 +12,7 @@ export function serializeData<ModelDataType extends DataType, DataType>(
     data: DataType,
     serializationOptions: SerializationOptions
 ) {
-    let attributeNames = getDataAttributes(data);
+    let attributeNames = Object.keys(data);
 
     let attributeDefinitionMap = mapping.getAttributeDefinitionMap();
 
@@ -47,13 +43,13 @@ export function deserializeData<ModelDataType>(
 
     let outputFields: AttributeDefinitionMap = {};
     for (let fieldName in fields) {
-        outputFields[getAliasedName(fieldName)] = fields[fieldName];
+        outputFields[BaseMappingData.getAliasedName(fieldName)] = fields[fieldName];
     }
 
-    let fieldNames = getDataAttributes(fieldData);
+    let fieldNames = Object.keys(fieldData);
     for (let fieldName of fieldNames) {
         let attributeDefinition = outputFields[fieldName];
-        let fieldValue = fieldData[getAliasedName(getAbsoluteFieldName(attributeDefinition))];
+        let fieldValue = fieldData[BaseMappingData.getAliasedName(BaseMappingData.getAbsoluteFieldName(attributeDefinition))];
         let attributeName = attributeDefinition.attributeName;
         let dataType = attributeDefinition.dataType;
 

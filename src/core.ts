@@ -4,13 +4,6 @@ import * as knex from 'knex';
 import {
     AttributeDefinition,
     AttributeDefinitionMap,
-    getAttributes,
-    getAbsoluteFieldName,
-    getAbsoluteFieldNames,
-    getFieldNames,
-    getTableName,
-    getIdentityAliasedName,
-    getAbsoluteFieldNameAttributeDefinitionMap,
     SerializationOptions
 } from './definition';
 
@@ -44,7 +37,7 @@ export class BaseMapper {
         let tableName = mapping.getTableName();
         let fieldNames = mapping.getFieldNames();
 
-        let selectColumns = mapping.getAbsoluteFieldNames().map(getIdentityAliasedName);
+        let selectColumns = mapping.getAbsoluteFieldNames().map(BaseMappingData.getIdentityAliasedName);
 
         let query = this.knexBuilder.select(selectColumns).from(tableName);
 
@@ -110,7 +103,7 @@ export class BaseMapper {
         let attributeNames = mapping.getAttributes();
         let whereConditions = serializeData(mapping, key, this.options);
         let fieldNames = mapping.getAbsoluteFieldNames();
-        let query = this.knexBuilder.select(fieldNames.map(getIdentityAliasedName)).from(mapping.getTableName());
+        let query = this.knexBuilder.select(fieldNames.map(BaseMappingData.getIdentityAliasedName)).from(mapping.getTableName());
         
         if (Object.keys(whereConditions).length > 0) {
             query = query.where(whereConditions);
@@ -223,11 +216,11 @@ export class FromQuery<SourceType> extends BaseQuery {
                 { attributeName: key }
             );
 
-            fieldMap[getAbsoluteFieldName(attributeDefinition)] = newAttributeDefinition;
+            fieldMap[BaseMappingData.getAbsoluteFieldName(attributeDefinition)] = newAttributeDefinition;
         });
 
         let knexQuery = this.knexQuery.select(
-            Object.keys(fieldMap).map(getIdentityAliasedName)
+            Object.keys(fieldMap).map(BaseMappingData.getIdentityAliasedName)
         );
 
         return new SelectQuery<T>(this.knexClient, fieldMap, knexQuery, this.serializationOptions);
@@ -244,8 +237,8 @@ export class FromQuery<SourceType> extends BaseQuery {
         this.models.set(joinTableName, joinMapping);
         this.knexQuery = this.knexQuery[joinType](
             joinMapping.getTableName(),
-            getAbsoluteFieldName(attribute1),
-            getAbsoluteFieldName(attribute2)
+            BaseMappingData.getAbsoluteFieldName(attribute1),
+            BaseMappingData.getAbsoluteFieldName(attribute2)
         );
 
         return this;
@@ -303,7 +296,7 @@ export class WhereQuery extends BaseQuery {
 
     private whereOperator<T>(attribute: T, operator: ComparisonOperator, value: T) {
         let attributeDefinition: AttributeDefinition = attribute as any;
-        this.knexQuery = this.knexQuery.andWhere(getAbsoluteFieldName(attributeDefinition), operator, value as any);
+        this.knexQuery = this.knexQuery.andWhere(BaseMappingData.getAbsoluteFieldName(attributeDefinition), operator, value as any);
         return this;
     }
 }
@@ -330,7 +323,7 @@ export class SelectQuery<ResultType> extends WhereQuery {
 
     orderBy(attribute: any, direction: 'asc' | 'desc') {
         let attributeDefinition: AttributeDefinition = attribute;
-        this.knexQuery = this.knexQuery.orderBy(getAbsoluteFieldName(attributeDefinition), direction);
+        this.knexQuery = this.knexQuery.orderBy(BaseMappingData.getAbsoluteFieldName(attributeDefinition), direction);
         return this;
     }
 
@@ -413,7 +406,7 @@ export class InsertQuery<InsertDataType> extends BaseQuery implements PromiseLik
     }
 
     returningAll() {
-        let returnColumns = this.mapping.getAbsoluteFieldNames().map(getIdentityAliasedName);
+        let returnColumns = this.mapping.getAbsoluteFieldNames().map(BaseMappingData.getIdentityAliasedName);
         let knexQuery = this.knexQuery.returning(returnColumns);
 
         return new ReturningInsertQuery<InsertDataType>(

@@ -2,9 +2,12 @@
 import * as knex from 'knex';
 
 import {
-    AttributeDefinition,
-    getAbsoluteFieldName
+    AttributeDefinition
 } from './definition';
+
+import {
+    BaseMappingData
+} from './mapping';
 
 export type ComparisonOperator = '<' | '>' | '<=' | '>=' | '=' | '!=';
 export type LogicalOperator = 'and' | 'or';
@@ -82,7 +85,7 @@ export class ComparisonClause extends ConditionClause {
 
     private static makeRawExpression(knexClient: knex, operand: ComparisonOperandType) {
         if (operand instanceof AttributeDefinition) {
-            return knexClient.raw('??', getAbsoluteFieldName(operand));
+            return knexClient.raw('??', BaseMappingData.getAbsoluteFieldName(operand));
         } else {
             return knexClient.raw('?', operand);
         }
