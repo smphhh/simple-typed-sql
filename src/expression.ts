@@ -46,7 +46,7 @@ export class AggregationExpression {
             expressionString = `${this.aggregationFunction}(*)`;
 
         } else {
-            expressionString = "count(distinct *)";
+            throw new Error("Invalid aggregation");
         }
 
         if (alias !== undefined) {

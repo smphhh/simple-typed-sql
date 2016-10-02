@@ -54,6 +54,19 @@ export class BaseMapper {
         );
     }
 
+    selectCountFrom<T>(wrappedMapping: Mapping<T>) {
+        let mapping = WrappedMappingData.getMapping(wrappedMapping);
+
+        let alias = "value";
+        let aggregationExpression = new AggregationExpression("count");
+        let fieldMap: AttributeDefinitionMap = { value: aggregationExpression.getAttributeDefinition(alias) };
+        let knexQuery = this.knexBuilder
+            .select(aggregationExpression.buildAggregationClause(this.knexClient, alias))
+            .from(mapping.getTableName());
+
+        return new SingleValueSelectQuery<number>(this.knexClient, fieldMap, knexQuery, this.options);
+    }
+
     updateWith<T extends U, U>(wrappedMapping: Mapping<T>, data: U) {
         let mapping = WrappedMappingData.getMapping(wrappedMapping);
         let tableName = mapping.getTableName();
@@ -346,7 +359,7 @@ export class SelectQuery<ResultType> extends WhereQuery {
         } else if (attribute instanceof AggregationExpression) {
             this.knexQuery.orderBy(attribute.buildAggregationClause(this.knexClient) as any, direction);
             return this;
-            
+
         } else {
             throw new Error(`Invalid order by attribute: ${attribute}`);
         }
@@ -390,6 +403,34 @@ export class SelectQuery<ResultType> extends WhereQuery {
     }
 
     then<TResult>(onfulfilled?: (value: ResultType[]) => TResult | PromiseLike<TResult>, onrejected?: (reason: any) => TResult | PromiseLike<TResult>): PromiseLike<TResult> {
+        return this.execute().then(onfulfilled, onrejected);
+    }
+}
+
+export class SingleValueSelectQuery<ResultType> extends WhereQuery {
+    constructor(
+        knexClient: knex,
+        private fields: AttributeDefinitionMap,
+        knexQuery: knex.QueryBuilder,
+        private serializationOptions: SerializationOptions
+    ) {
+        super(knexClient, knexQuery);
+    }
+
+    async execute() {
+        let queryResults: any[] = await this.knexQuery;
+        if (queryResults.length === 0) {
+            return null as ResultType;
+
+        } else if (queryResults.length === 1) {
+            return deserializeData<{ value: ResultType }>(this.fields, queryResults[0], this.serializationOptions).value;
+
+        } else {
+            throw new Error(`Invalid query result with length ${queryResults.length}`);
+        }
+    }
+
+    then<TResult>(onfulfilled?: (value: ResultType) => TResult | PromiseLike<TResult>, onrejected?: (reason: any) => TResult | PromiseLike<TResult>): PromiseLike<TResult> {
         return this.execute().then(onfulfilled, onrejected);
     }
 }

@@ -216,11 +216,20 @@ describe("Simple typed SQL expressions", function () {
             .groupBy(testMapping3.value)
             .orderBy(count(testMapping3.id), 'desc');
 
-        console.log(query.toString());
-
         let data = await query;
 
         expect(data).to.deep.equal([{ idCount: 3 }, { idCount: 2 }, { idCount: 1 }]);
+    });
+
+    it("should support simple table count", async function () {
+        await mapper.batchInsertInto(
+            testMapping1,
+            [testObject1, testObject2]
+        );
+
+        let query = mapper.selectCountFrom(testMapping1);
+
+        expect(await query).to.equal(2);
     });
 
 });
