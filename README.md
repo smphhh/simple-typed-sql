@@ -35,7 +35,7 @@ let mapper = new sqlMapper.Mapper(knexClient, {});
 Define mapping to a SQL table
 
 ```typescript
-let fooMapping = sqlMapper.defineModel(
+let fooMapping = sqlMapper.defineMapping(
     'foo_table_name',
     {
         id: sqlMapper.defineNumber(),
@@ -49,6 +49,7 @@ let fooMapping = sqlMapper.defineModel(
 ## Quick usage
 
 Insert data:
+
 ```typescript
 await mapper.insertInto(fooMapping, {
     id: 1,
@@ -59,6 +60,7 @@ await mapper.insertInto(fooMapping, {
 ```
 
 Select all columns from table:
+
 ```typescript
 let fooList = await mapper.selectAllFrom(fooMapping);
 
@@ -69,6 +71,7 @@ console.log(fooList[0].nonExisting);
 ```
 
 Simple where clause
+
 ```typescript
 await mapper.insertInto(fooMapping, {
     id: 2,

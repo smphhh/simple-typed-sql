@@ -7,7 +7,7 @@ import {
     defineBoolean,
     defineDatetime,
     defineJson,
-    defineModel,
+    defineMapping,
     defineNumber,
     defineString,
     Mapper,
@@ -34,7 +34,7 @@ let testDatabaseOptions = {
 
 describe("Simple typed SQL condition", function () {
 
-    let testModel1 = defineModel(
+    let testMapping1 = defineMapping(
         'test_model',
         {
             id: defineNumber(),
@@ -42,7 +42,7 @@ describe("Simple typed SQL condition", function () {
         }
     );
 
-    let testModel2 = defineModel(
+    let testMapping2 = defineMapping(
         'test_model_2',
         {
             id: defineNumber(),
@@ -53,7 +53,7 @@ describe("Simple typed SQL condition", function () {
         }
     );
 
-    let testModel3 = defineModel(
+    let testMapping3 = defineMapping(
         'test_model_3',
         {
             id: defineNumber(),
@@ -107,79 +107,79 @@ describe("Simple typed SQL condition", function () {
     });
 
     it("should support where clauses comparing two fields", async function () {
-        await mapper.insertInto(testModel1, testObject1);
-        await mapper.insertInto(testModel1, testObject2);
+        await mapper.insertInto(testMapping1, testObject1);
+        await mapper.insertInto(testMapping1, testObject2);
 
         let query = mapper
-            .selectAllFrom(testModel1)
-            .where(comparison(testModel1.externalId, '=', testModel1.externalId));
+            .selectAllFrom(testMapping1)
+            .where(comparison(testMapping1.externalId, '=', testMapping1.externalId));
 
         expect(await query).to.deep.equal([testObject1, testObject2]);        
     });
 
     it("should support where clauses comparing a field to a value", async function () {
-        await mapper.insertInto(testModel1, testObject1);
-        await mapper.insertInto(testModel1, testObject2);
+        await mapper.insertInto(testMapping1, testObject1);
+        await mapper.insertInto(testMapping1, testObject2);
 
         let query = mapper
-            .selectAllFrom(testModel1)
-            .where(comparison(testModel1.externalId, '=', testObject1.externalId));
+            .selectAllFrom(testMapping1)
+            .where(comparison(testMapping1.externalId, '=', testObject1.externalId));
 
         expect(await query).to.deep.equal([testObject1]);
     });
 
     it("should support where clauses comparing a value to a field", async function () {
-        await mapper.insertInto(testModel1, testObject1);
-        await mapper.insertInto(testModel1, testObject2);
+        await mapper.insertInto(testMapping1, testObject1);
+        await mapper.insertInto(testMapping1, testObject2);
 
         let query = mapper
-            .selectAllFrom(testModel1)
-            .where(equal(testObject2.id, testModel1.id));
+            .selectAllFrom(testMapping1)
+            .where(equal(testObject2.id, testMapping1.id));
 
         expect(await query).to.deep.equal([testObject2]);
     });
 
     it("should support where clauses with two comparisons combined with and-operator", async function () {
-        await mapper.insertInto(testModel1, testObject1);
-        await mapper.insertInto(testModel1, testObject2);
+        await mapper.insertInto(testMapping1, testObject1);
+        await mapper.insertInto(testMapping1, testObject2);
 
         let query = mapper
-            .selectAllFrom(testModel1)
+            .selectAllFrom(testMapping1)
             .where(and(
-                equal(testObject2.id, testModel1.id),
-                equal(testModel1.externalId, testObject2.externalId)
+                equal(testObject2.id, testMapping1.id),
+                equal(testMapping1.externalId, testObject2.externalId)
             ));
 
         expect(await query).to.deep.equal([testObject2]);
     });
 
     it("should support where clauses with two comparisons combined with or-operator", async function () {
-        await mapper.insertInto(testModel1, testObject1);
-        await mapper.insertInto(testModel1, testObject2);
+        await mapper.insertInto(testMapping1, testObject1);
+        await mapper.insertInto(testMapping1, testObject2);
 
         let query = mapper
-            .selectAllFrom(testModel1)
+            .selectAllFrom(testMapping1)
             .where(or(
-                equal(testModel1.id, testObject1.id),
-                equal(testModel1.id, testObject2.id)
+                equal(testMapping1.id, testObject1.id),
+                equal(testMapping1.id, testObject2.id)
             ))
-            .orderBy(testModel1.id, 'asc');
+            .orderBy(testMapping1.id, 'asc');
 
         expect(await query).to.deep.equal([testObject1, testObject2]);
     });
 
     it("should support join clauses comparing two fields", async function () {
-        await mapper.insertInto(testModel1, testObject1);
-        await mapper.insertInto(testModel1, testObject2);
+        await mapper.insertInto(testMapping1, testObject1);
+        await mapper.insertInto(testMapping1, testObject2);
 
-        await mapper.insertInto(testModel3, testObject3_1);
+        await mapper.insertInto(testMapping3, testObject3_1);
 
         let query = mapper
-            .from(testModel1)
-            .innerJoin(testModel3, equal(testModel1.id, testModel3.testModel1Id))
+            .from(testMapping1)
+            .innerJoin(testMapping3, equal(testMapping1.id, testMapping3.testModel1Id))
             .select({
-                externalId: testModel1.externalId,
-                value2: testModel3.value
+                externalId: testMapping1.externalId,
+                value2: testMapping3.value
             });
 
         expect(await query).to.deep.equal([
@@ -188,36 +188,36 @@ describe("Simple typed SQL condition", function () {
     });
 
     it("should support join clauses with two field pair comparisons", async function () {
-        await mapper.insertInto(testModel1, testObject1);
-        await mapper.insertInto(testModel1, testObject2);
+        await mapper.insertInto(testMapping1, testObject1);
+        await mapper.insertInto(testMapping1, testObject2);
 
-        await mapper.insertInto(testModel3, testObject3_1);
+        await mapper.insertInto(testMapping3, testObject3_1);
 
         let query = mapper
-            .from(testModel1)
-            .innerJoin(testModel3, and(
-                equal(testModel1.id, testModel3.testModel1Id),
-                equal(testModel1.externalId, testModel3.value)
+            .from(testMapping1)
+            .innerJoin(testMapping3, and(
+                equal(testMapping1.id, testMapping3.testModel1Id),
+                equal(testMapping1.externalId, testMapping3.value)
             ))
-            .select({ value2: testModel3.value });
+            .select({ value2: testMapping3.value });
 
         expect(await query).to.deep.equal([]);
     });
 
     it("should support complex join clauses containing values", async function () {
-        await mapper.insertInto(testModel1, testObject1);
-        await mapper.insertInto(testModel1, testObject2);
+        await mapper.insertInto(testMapping1, testObject1);
+        await mapper.insertInto(testMapping1, testObject2);
 
-        await mapper.insertInto(testModel3, testObject3_1);
-        await mapper.insertInto(testModel3, testObject3_2);
+        await mapper.insertInto(testMapping3, testObject3_1);
+        await mapper.insertInto(testMapping3, testObject3_2);
 
         let query = mapper
-            .from(testModel1)
-            .innerJoin(testModel3, and(
-                equal(testModel1.id, testModel3.testModel1Id),
-                equal(testModel1.externalId, testObject1.externalId)
+            .from(testMapping1)
+            .innerJoin(testMapping3, and(
+                equal(testMapping1.id, testMapping3.testModel1Id),
+                equal(testMapping1.externalId, testObject1.externalId)
             ))
-            .select({ value2: testModel3.value });
+            .select({ value2: testMapping3.value });
 
         expect(await query).to.deep.equal([{ value2: testObject3_1.value }]);
     });
