@@ -13,6 +13,10 @@ import {
 } from './condition';
 
 import {
+    AggregationExpression
+} from './expression';
+
+import {
     BaseMappingData,
     defineMapping,
     Mapping,
@@ -207,22 +211,30 @@ export class FromQuery<SourceType> extends BaseQuery {
     select<T>(selectClause: T) {
         let fieldMap: AttributeDefinitionMap = {};
         let selectedColumns = Object.keys(selectClause).map(key => {
-            let attributeDefinition: AttributeDefinition = selectClause[key];
-            let tableName = attributeDefinition.tableName;
-            if (!this.models.has(tableName)) {
-                throw new Error(`Invalid select expression for attribute "${key}": the table ${tableName} is missing a from-clause entry.`);
+            let expression: AttributeDefinition | AggregationExpression = selectClause[key];
+
+            if (expression instanceof AttributeDefinition) {
+                let attributeDefinition: AttributeDefinition = selectClause[key];
+                let tableName = attributeDefinition.tableName;
+                if (!this.models.has(tableName)) {
+                    throw new Error(`Invalid select expression for attribute "${key}": the table ${tableName} is missing a from-clause entry.`);
+                }
+
+                let newAttributeDefinition = new AttributeDefinition();
+                Object.assign(
+                    newAttributeDefinition,
+                    attributeDefinition,
+                    { attributeName: key }
+                );
+
+                fieldMap[key] = newAttributeDefinition;
+
+                return BaseMappingData.getAliasedAttributeName(newAttributeDefinition);
+                
+            } else if (expression instanceof AggregationExpression) {
+                fieldMap[key] = expression.getAttributeDefinition(key);
+                return expression.buildAggregationClause(this.knexClient, key)
             }
-
-            let newAttributeDefinition = new AttributeDefinition();
-            Object.assign(
-                newAttributeDefinition,
-                attributeDefinition,
-                { attributeName: key }
-            );
-
-            fieldMap[key] = newAttributeDefinition;
-
-            return BaseMappingData.getAliasedAttributeName(newAttributeDefinition);
         });
 
         let knexQuery = this.knexQuery.select(selectedColumns);

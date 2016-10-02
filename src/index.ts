@@ -12,6 +12,15 @@ export {
 } from './core';
 
 export {
+    avg,
+    count,
+    countDistinct,
+    max,
+    min,
+    sum
+} from './expression';
+
+export {
     and,
     or,
     comparison,

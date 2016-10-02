@@ -47,6 +47,9 @@ export interface AttributeOptions {
 
 export type DataType = 'number' | 'string' | 'json' | 'datetime';
 
+
+export type ValueType = string | number | boolean | Date;
+
 export class AttributeDefinition {
     dataType: DataType;
     attributeName: string;
