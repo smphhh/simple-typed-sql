@@ -1,16 +1,18 @@
 # Simple Typed SQL
 
-Experimental object-SQL mapper based on Knex.js with partial type safety when used with TypeScript.
-> Never refer to SQL table columns using strings again.
+JavaScript/TypeScript SQL query builder based on table-level abstraction with the goal of allowing one to write complex
+SQL queries without needing use strings to refer to columns or tables.
+Provides partial type safety when used with TypeScript.
+Based on Knex.js.
 
 Supports:
 - Select, insert and update queries
 - Complex where clauses
 - Joins with complex join conditions
 - Transactions
+- Aggregation functions and group by
 
 Upcoming:
-- Aggregation functions and group by
 - Select expressions
 
 ## Installation
