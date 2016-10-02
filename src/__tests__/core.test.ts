@@ -247,6 +247,30 @@ describe("Simple typed SQL", function () {
         expect(data).to.deep.equal([testObject2, testObject1]);
     });
 
+    it("should support limit clauses", async function () {
+        await mapper.insertInto(testMapping1, testObject1);
+        await mapper.insertInto(testMapping1, testObject2);
+
+        let data = await mapper
+            .selectAllFrom(testMapping1)
+            .orderBy(testMapping1.id, 'asc')
+            .limit(1);
+
+        expect(data).to.deep.equal([testObject1]);
+    });
+
+    it("should support offset clauses", async function () {
+        await mapper.insertInto(testMapping1, testObject1);
+        await mapper.insertInto(testMapping1, testObject2);
+
+        let data = await mapper
+            .selectAllFrom(testMapping1)
+            .orderBy(testMapping1.id, 'asc')
+            .offset(1);
+
+        expect(data).to.deep.equal([testObject2]);
+    });
+
     it("should support group by clauses", async function () {
         await mapper.batchInsertInto(
             testMapping3,

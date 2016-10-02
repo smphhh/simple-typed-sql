@@ -351,6 +351,11 @@ export class SelectQuery<ResultType> extends WhereQuery {
         return this;
     }
 
+    offset(offset: number) {
+        this.knexQuery.offset(offset);
+        return this;
+    }
+
     orderBy(attribute: AttributeDefinition | AggregationExpression | ValueType, direction: 'asc' | 'desc') {
         if (attribute instanceof AttributeDefinition) {
             this.knexQuery.orderBy(BaseMappingData.getAbsoluteFieldName(attribute), direction);
