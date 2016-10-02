@@ -22,6 +22,7 @@ export {
 
 export {
     defineMapping,
+    defineMapping as defineModel,
     Mapping,
     WrappedMappingData
 } from './mapping';
