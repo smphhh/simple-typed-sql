@@ -2,8 +2,7 @@
 
 JavaScript/TypeScript SQL query builder based on table-level abstraction with the goal of allowing one to write complex
 SQL queries without needing use strings to refer to columns or tables.
-Provides partial type safety when used with TypeScript.
-Based on Knex.js.
+Provides partial type safety when used with TypeScript. Powered by Knex.js.
 
 Supports:
 - Select, insert and update queries
@@ -29,7 +28,7 @@ Create Mapper object
 // Create knex connection
 let knexClient = knex(...);
 
-import * as sqlMapper from 'simple-typed-rpc'
+import * as sqlMapper from 'simple-typed-sql';
 
 let mapper = new sqlMapper.Mapper(knexClient);
 ```
