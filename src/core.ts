@@ -37,13 +37,13 @@ export class BaseMapper {
         let tableName = mapping.getTableName();
         let fieldNames = mapping.getFieldNames();
 
-        let selectColumns = mapping.getAbsoluteFieldNames().map(BaseMappingData.getIdentityAliasedName);
+        let selectColumns = mapping.getAttributeDefinitions().map(BaseMappingData.getAliasedAttributeName);
 
         let query = this.knexBuilder.select(selectColumns).from(tableName);
 
         return new SelectQuery<T>(
             this.knexClient,
-            mapping.getAbsoluteFieldNameAttributeDefinitionMap(),
+            mapping.getAttributeDefinitionMap(),
             query,
             this.options
         );
@@ -103,7 +103,7 @@ export class BaseMapper {
         let attributeNames = mapping.getAttributes();
         let whereConditions = serializeData(mapping, key, this.options);
         let fieldNames = mapping.getAbsoluteFieldNames();
-        let query = this.knexBuilder.select(fieldNames.map(BaseMappingData.getIdentityAliasedName)).from(mapping.getTableName());
+        let query = this.knexBuilder.select(mapping.getAttributeDefinitions().map(BaseMappingData.getAliasedAttributeName)).from(mapping.getTableName());
         
         if (Object.keys(whereConditions).length > 0) {
             query = query.where(whereConditions);
@@ -111,7 +111,7 @@ export class BaseMapper {
 
         let data = await query.limit(1);
         if (data.length === 1) {
-            return deserializeData<T>(mapping.getAbsoluteFieldNameAttributeDefinitionMap(), data[0], this.options);
+            return deserializeData<T>(mapping.getAttributeDefinitionMap(), data[0], this.options);
         } else {
             return null as T;
         }
@@ -156,6 +156,10 @@ export class BaseQuery {
 
     getKnexQuery() {
         return this.knexQuery;
+    }
+
+    toString() {
+        return this.knexQuery.toString();
     }
 }
 
@@ -202,7 +206,7 @@ export class FromQuery<SourceType> extends BaseQuery {
 
     select<T>(selectClause: T) {
         let fieldMap: AttributeDefinitionMap = {};
-        Object.keys(selectClause).forEach(key => {
+        let selectedColumns = Object.keys(selectClause).map(key => {
             let attributeDefinition: AttributeDefinition = selectClause[key];
             let tableName = attributeDefinition.tableName;
             if (!this.models.has(tableName)) {
@@ -216,12 +220,12 @@ export class FromQuery<SourceType> extends BaseQuery {
                 { attributeName: key }
             );
 
-            fieldMap[BaseMappingData.getAbsoluteFieldName(attributeDefinition)] = newAttributeDefinition;
+            fieldMap[key] = newAttributeDefinition;
+
+            return BaseMappingData.getAliasedAttributeName(newAttributeDefinition);
         });
 
-        let knexQuery = this.knexQuery.select(
-            Object.keys(fieldMap).map(BaseMappingData.getIdentityAliasedName)
-        );
+        let knexQuery = this.knexQuery.select(selectedColumns);
 
         return new SelectQuery<T>(this.knexClient, fieldMap, knexQuery, this.serializationOptions);
     }
@@ -406,13 +410,13 @@ export class InsertQuery<InsertDataType> extends BaseQuery implements PromiseLik
     }
 
     returningAll() {
-        let returnColumns = this.mapping.getAbsoluteFieldNames().map(BaseMappingData.getIdentityAliasedName);
+        let returnColumns = this.mapping.getAttributeDefinitions().map(BaseMappingData.getAliasedAttributeName);
         let knexQuery = this.knexQuery.returning(returnColumns);
 
         return new ReturningInsertQuery<InsertDataType>(
             this.knexClient,
             knexQuery,
-            this.mapping.getAbsoluteFieldNameAttributeDefinitionMap(),
+            this.mapping.getAttributeDefinitionMap(),
             this.serializationOptions
         );
     }

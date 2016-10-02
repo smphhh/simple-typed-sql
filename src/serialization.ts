@@ -35,32 +35,23 @@ export function serializeData<ModelDataType extends DataType, DataType>(
 }
 
 export function deserializeData<ModelDataType>(
-    fields: AttributeDefinitionMap,
-    fieldData: any,
+    outputFields: AttributeDefinitionMap,
+    data: any,
     serializationOptions: SerializationOptions
 ) {
-    let data: any = {};
-
-    let outputFields: AttributeDefinitionMap = {};
-    for (let fieldName in fields) {
-        outputFields[BaseMappingData.getAliasedName(fieldName)] = fields[fieldName];
-    }
-
-    let fieldNames = Object.keys(fieldData);
+    let fieldNames = Object.keys(data);
     for (let fieldName of fieldNames) {
         let attributeDefinition = outputFields[fieldName];
-        let fieldValue = fieldData[BaseMappingData.getAliasedName(BaseMappingData.getAbsoluteFieldName(attributeDefinition))];
+        let fieldValue = data[fieldName];
         let attributeName = attributeDefinition.attributeName;
         let dataType = attributeDefinition.dataType;
 
         if (serializationOptions.stringifyJson && dataType === 'json') {
-            data[attributeName] = JSON.parse(fieldValue);
+            data[fieldName] = JSON.parse(fieldValue);
         } else if (dataType === 'datetime' && typeof fieldValue === 'number') {
-            data[attributeName] = new Date(fieldValue);
+            data[fieldName] = new Date(fieldValue);
         } else if (dataType === 'number' && typeof fieldValue === 'string') {
-            data[attributeName] = parseInt(fieldValue);
-        } else {
-            data[attributeName] = fieldValue;
+            data[fieldName] = parseInt(fieldValue);
         }
     }
 

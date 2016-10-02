@@ -84,6 +84,10 @@ export class BaseMappingData<T> {
         }
     }
 
+    static getAliasedAttributeName(attributeDefinition: AttributeDefinition) {
+        return `${BaseMappingData.getAbsoluteFieldName(attributeDefinition)} as ${attributeDefinition.attributeName}`;
+    }
+
     static getIdentityAliasedName(name: string) {
         return `${name} as ${BaseMappingData.getAliasedName(name)}`;
     }
