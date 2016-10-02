@@ -187,6 +187,23 @@ describe("Simple typed SQL expressions", function () {
         expect(await query).to.deep.equal([{ min: Math.min(testObject1.id, testObject2.id) }]);
     });
 
+    it("should support aggregation with group by", async function () {
+        await mapper.batchInsertInto(
+            testMapping3,
+            ['q', 'p', 'p', 'r', 'p', 'r'].map((x, index) => ({ id: index, testModel1Id: 1, value: x }))
+        );
+
+        let query = mapper
+            .from(testMapping3)
+            .select({ idSum: sum(testMapping3.id) })
+            .groupBy(testMapping3.value)
+            .orderBy(testMapping3.value, 'asc');
+
+        let data = await query;
+
+        expect(data.sort((a, b) => (a.idSum - b.idSum))).to.deep.equal([{ idSum: 0 }, { idSum: 7 }, { idSum: 8 }]);
+    });
+
 });
 
 

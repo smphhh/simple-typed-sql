@@ -4,7 +4,8 @@ import * as knex from 'knex';
 import {
     AttributeDefinition,
     AttributeDefinitionMap,
-    SerializationOptions
+    SerializationOptions,
+    ValueType
 } from './definition';
 
 import {
@@ -230,7 +231,7 @@ export class FromQuery<SourceType> extends BaseQuery {
                 fieldMap[key] = newAttributeDefinition;
 
                 return BaseMappingData.getAliasedAttributeName(newAttributeDefinition);
-                
+
             } else if (expression instanceof AggregationExpression) {
                 fieldMap[key] = expression.getAttributeDefinition(key);
                 return expression.buildAggregationClause(this.knexClient, key)
@@ -328,18 +329,35 @@ export class SelectQuery<ResultType> extends WhereQuery {
     }
 
     forUpdate() {
-        this.knexQuery = this.knexQuery.forUpdate();
+        this.knexQuery.forUpdate();
         return this;
     }
 
     limit(count: number) {
-        this.knexQuery = this.knexQuery.limit(count);
+        this.knexQuery.limit(count);
         return this;
     }
 
-    orderBy(attribute: any, direction: 'asc' | 'desc') {
-        let attributeDefinition: AttributeDefinition = attribute;
-        this.knexQuery = this.knexQuery.orderBy(BaseMappingData.getAbsoluteFieldName(attributeDefinition), direction);
+    orderBy(attribute: AttributeDefinition | ValueType, direction: 'asc' | 'desc') {
+        if (attribute instanceof AttributeDefinition) {
+            this.knexQuery.orderBy(BaseMappingData.getAbsoluteFieldName(attribute), direction);
+            return this;
+        } else {
+            throw new Error(`Invalid order by attribute: ${attribute}`);
+        }
+    }
+
+    groupBy(...attributes: (AttributeDefinition | ValueType)[]) {
+        let fieldNames = attributes.map(item => {
+            if (item instanceof AttributeDefinition) {
+                return BaseMappingData.getAbsoluteFieldName(item);
+            } else {
+                throw new Error(`Invalid group by attribute: ${item}`);
+            }
+        });
+
+        this.knexQuery.groupBy(fieldNames);
+
         return this;
     }
 

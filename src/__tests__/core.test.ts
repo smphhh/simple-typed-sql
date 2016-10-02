@@ -247,6 +247,23 @@ describe("Simple typed SQL", function () {
         expect(data).to.deep.equal([testObject2, testObject1]);
     });
 
+    it("should support group by clauses", async function () {
+        await mapper.batchInsertInto(
+            testMapping3,
+            ['q', 'p', 'p', 'r', 'p', 'r'].map((x, index) => ({ id: index, testModel1Id: 1, value: x }))
+        );
+
+        let query = mapper
+            .from(testMapping3)
+            .select({ value: testMapping3.value })
+            .groupBy(testMapping3.value)
+            .orderBy(testMapping3.value, 'asc');
+
+        let data = await query;
+
+        expect(data).to.deep.equal([{ value: 'p' }, { value: 'q' }, { value: 'r' }])
+    });
+
     it("should support less-than where clauses", async function () {
         await mapper.insertInto(testMapping1, testObject1);
         await mapper.insertInto(testMapping1, testObject2);
