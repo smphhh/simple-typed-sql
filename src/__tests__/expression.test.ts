@@ -204,6 +204,25 @@ describe("Simple typed SQL expressions", function () {
         expect(data.sort((a, b) => (a.idSum - b.idSum))).to.deep.equal([{ idSum: 0 }, { idSum: 7 }, { idSum: 8 }]);
     });
 
+    it("should support ordering by aggregation expression values", async function () {
+        await mapper.batchInsertInto(
+            testMapping3,
+            ['q', 'p', 'p', 'r', 'p', 'r'].map((x, index) => ({ id: index, testModel1Id: 1, value: x }))
+        );
+
+        let query = mapper
+            .from(testMapping3)
+            .select({ idCount: count(testMapping3.id) })
+            .groupBy(testMapping3.value)
+            .orderBy(count(testMapping3.id), 'desc');
+
+        console.log(query.toString());
+
+        let data = await query;
+
+        expect(data).to.deep.equal([{ idCount: 3 }, { idCount: 2 }, { idCount: 1 }]);
+    });
+
 });
 
 

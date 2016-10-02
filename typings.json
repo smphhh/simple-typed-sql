@@ -5,7 +5,7 @@
     "chai-as-promised": "registry:npm/chai-as-promised#5.1.0+20160310030142"
   },
   "globalDependencies": {
-    "knex": "registry:dt/knex#0.0.0+20160812170915",
+    "knex": "registry:dt/knex#0.0.0+20160923124117",
     "mocha": "registry:env/mocha#2.2.5+20160723033700",
     "node": "registry:env/node#6.0.0+20160813135048"
   }

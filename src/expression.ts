@@ -30,16 +30,31 @@ export class AggregationExpression {
         }
     }
 
-    buildAggregationClause(knexClient: knex, alias: string): knex.Raw {
+    buildAggregationClause(knexClient: knex, alias?: string): knex.Raw {
+        let bindings: string[] = [];
+        let expressionString;
+
         if (this.operandAttribute !== undefined && this.aggregationFunction !== "countDistinct") {
-            return knexClient.raw(`${this.aggregationFunction}(??) as ??`, [BaseMappingData.getAbsoluteFieldName(this.operandAttribute), alias]);
+            expressionString = `${this.aggregationFunction}(??)`;
+            bindings.push(BaseMappingData.getAbsoluteFieldName(this.operandAttribute));
 
         } else if (this.operandAttribute !== undefined) {
-            return knexClient.raw(`count(distinct ??) as ??`, [BaseMappingData.getAbsoluteFieldName(this.operandAttribute), alias]);
+            expressionString = "count(distinct ??)";
+            bindings.push(BaseMappingData.getAbsoluteFieldName(this.operandAttribute));
+
+        } else if (this.aggregationFunction !== "countDistinct") {
+            expressionString = `${this.aggregationFunction}(*)`;
 
         } else {
-            return knexClient.raw(`${this.aggregationFunction}(*) as ??`, [alias]);
+            expressionString = "count(distinct *)";
         }
+
+        if (alias !== undefined) {
+            expressionString += " as ??";
+            bindings.push(alias);
+        }
+
+        return knexClient.raw(expressionString, bindings);
     }
 
     getAttributeDefinition(alias: string) {

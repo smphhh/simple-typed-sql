@@ -338,10 +338,15 @@ export class SelectQuery<ResultType> extends WhereQuery {
         return this;
     }
 
-    orderBy(attribute: AttributeDefinition | ValueType, direction: 'asc' | 'desc') {
+    orderBy(attribute: AttributeDefinition | AggregationExpression | ValueType, direction: 'asc' | 'desc') {
         if (attribute instanceof AttributeDefinition) {
             this.knexQuery.orderBy(BaseMappingData.getAbsoluteFieldName(attribute), direction);
             return this;
+
+        } else if (attribute instanceof AggregationExpression) {
+            this.knexQuery.orderBy(attribute.buildAggregationClause(this.knexClient) as any, direction);
+            return this;
+            
         } else {
             throw new Error(`Invalid order by attribute: ${attribute}`);
         }
