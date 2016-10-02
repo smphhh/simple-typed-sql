@@ -78,10 +78,13 @@ export class WrappedMappingData<T> {
     }
 }
 
+/**
+ * A type representing a mapping between an SQL table and a JavaScript/Typescript object.
+ */
 export type Mapping<T> = WrappedMappingData<T> & T;
 
 /**
- * 
+ * Create a Mapping given a table name and a definition object.
  */
 export function defineMapping<T>(tableName: string, prototypeDefinition: T): Mapping<T> {
     let mappingData = new BaseMappingData(tableName, prototypeDefinition);
