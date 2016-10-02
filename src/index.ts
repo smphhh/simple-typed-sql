@@ -2,11 +2,9 @@
 export {
     defineDatetime,
     defineJson,
-    defineModel,
     defineNumber,
     defineString,
-    defineBoolean,
-    ModelDefinition
+    defineBoolean
 } from './definition';
 
 export {
@@ -21,3 +19,9 @@ export {
     ComparisonOperator,
     LogicalOperator
 } from './condition';
+
+export {
+    defineMapping,
+    Mapping,
+    WrappedMappingData
+} from './mapping';

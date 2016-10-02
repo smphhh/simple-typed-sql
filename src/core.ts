@@ -11,9 +11,6 @@ import {
     getTableName,
     getIdentityAliasedName,
     getAbsoluteFieldNameAttributeDefinitionMap,
-    ModelDefinition,
-    serializeData,
-    deserializeData,
     SerializationOptions
 } from './definition';
 
@@ -21,6 +18,18 @@ import {
     ComparisonOperator,
     ConditionClause
 } from './condition';
+
+import {
+    BaseMappingData,
+    defineMapping,
+    Mapping,
+    WrappedMappingData
+} from './mapping';
+
+import {
+    deserializeData,
+    serializeData
+} from './serialization';
 
 export class BaseMapper {
     constructor(
@@ -30,70 +39,78 @@ export class BaseMapper {
     ) {
     }
 
-    selectAllFrom<T>(model: ModelDefinition<T>) {
-        let tableName = getTableName(model);
-        let fieldNames = getFieldNames(model);
+    selectAllFrom<T>(wrappedMapping: Mapping<T>) {
+        let mapping = WrappedMappingData.getMapping(wrappedMapping);
+        let tableName = mapping.getTableName();
+        let fieldNames = mapping.getFieldNames();
 
-        let selectColumns = getAbsoluteFieldNames(model).map(getIdentityAliasedName);
+        let selectColumns = mapping.getAbsoluteFieldNames().map(getIdentityAliasedName);
 
         let query = this.knexBuilder.select(selectColumns).from(tableName);
 
         return new SelectQuery<T>(
             this.knexClient,
-            getAbsoluteFieldNameAttributeDefinitionMap(model),
+            mapping.getAbsoluteFieldNameAttributeDefinitionMap(),
             query,
             this.options
         );
     }
 
-    updateWith<T extends U, U>(model: ModelDefinition<T>, data: U) {
-        let tableName = getTableName(model);
-        let fieldData = serializeData(model, data, this.options);
+    updateWith<T extends U, U>(wrappedMapping: Mapping<T>, data: U) {
+        let mapping = WrappedMappingData.getMapping(wrappedMapping);
+        let tableName = mapping.getTableName();
+        let fieldData = serializeData(mapping, data, this.options);
 
         let query = this.knexBuilder.table(tableName).update(fieldData);
 
-        return new UpdateQuery(this.knexClient, model, query, this.options);
+        return new UpdateQuery(this.knexClient, mapping, query, this.options);
     }
 
-    insertInto<T, U extends T>(model: ModelDefinition<T>, data: U) {
+    insertInto<T, U extends T>(wrappedMapping: Mapping<T>, data: U) {
+        let mapping = WrappedMappingData.getMapping(wrappedMapping);
         let query = this.knexBuilder
-            .insert(serializeData(model, data as T, this.options))
-            .into(getTableName(model));
+            .insert(serializeData(mapping, data as T, this.options))
+            .into(mapping.getTableName());
 
-        return new InsertQuery(this.knexClient, model, query, this.options);
+        return new InsertQuery(this.knexClient, mapping, query, this.options);
     }
 
-    batchInsertInto<T, U extends T>(model: ModelDefinition<T>, data: U[]) {
-        let serializedData = data.map(item => serializeData(model, item as T, this.options));
+    batchInsertInto<T, U extends T>(wrappedMapping: Mapping<T>, data: U[]) {
+        let mapping = WrappedMappingData.getMapping(wrappedMapping);
+        let serializedData = data.map(item => serializeData(mapping, item as T, this.options));
         let query = this.knexBuilder
             .insert(serializedData)
-            .into(getTableName(model));
+            .into(mapping.getTableName());
 
-        return new InsertQuery(this.knexClient, model, query, this.options);
+        return new InsertQuery(this.knexClient, mapping, query, this.options);
     }
 
-    deleteFrom<T>(model: ModelDefinition<T>) {
+    deleteFrom<T>(wrappedMapping: Mapping<T>) {
+        let mapping = WrappedMappingData.getMapping(wrappedMapping);
         let query = this.knexBuilder
-            .from(getTableName(model))
+            .from(mapping.getTableName())
             .del();
         
-        return new DeleteQuery(this.knexClient, model, query, this.options);
+        return new DeleteQuery(this.knexClient, mapping, query, this.options);
     }
 
-    truncate<T>(model: ModelDefinition<T>): Promise<void> {
-        return Promise.resolve(this.knexBuilder.table(model.__metadata.tableName).truncate());
+    truncate<T>(wrappedMapping: Mapping<T>): Promise<void> {
+        let mapping = WrappedMappingData.getMapping(wrappedMapping);
+        return Promise.resolve(this.knexBuilder.table(mapping.getTableName()).truncate());
     }
 
-    from<T>(model: ModelDefinition<T>) {
-        let query = this.knexBuilder.from(getTableName(model));
-        return new SimpleFromQuery(this.knexClient, model, query, this.options);
+    from<T>(wrappedMapping: Mapping<T>) {
+        let mapping = WrappedMappingData.getMapping(wrappedMapping);
+        let query = this.knexBuilder.from(mapping.getTableName());
+        return new FromQuery(this.knexClient, mapping, query, this.options);
     }
 
-    async tryFindOneByKey<T extends U, U>(model: ModelDefinition<T>, key: U) {
-        let attributeNames = getAttributes(model);
-        let whereConditions = serializeData(model, key, this.options);
-        let fieldNames = getAbsoluteFieldNames(model);
-        let query = this.knexBuilder.select(fieldNames.map(getIdentityAliasedName)).from(getTableName(model));
+    async tryFindOneByKey<T extends U, U>(wrappedMapping: Mapping<T>, key: U) {
+        let mapping = WrappedMappingData.getMapping(wrappedMapping);
+        let attributeNames = mapping.getAttributes();
+        let whereConditions = serializeData(mapping, key, this.options);
+        let fieldNames = mapping.getAbsoluteFieldNames();
+        let query = this.knexBuilder.select(fieldNames.map(getIdentityAliasedName)).from(mapping.getTableName());
         
         if (Object.keys(whereConditions).length > 0) {
             query = query.where(whereConditions);
@@ -101,14 +118,14 @@ export class BaseMapper {
 
         let data = await query.limit(1);
         if (data.length === 1) {
-            return deserializeData<T>(getAbsoluteFieldNameAttributeDefinitionMap(model), data[0], this.options);
+            return deserializeData<T>(mapping.getAbsoluteFieldNameAttributeDefinitionMap(), data[0], this.options);
         } else {
             return null as T;
         }
     }
 
-    async findOneByKey<T extends U, U>(model: ModelDefinition<T>, key: U) {
-        let data = await this.tryFindOneByKey(model, key);
+    async findOneByKey<T extends U, U>(wrappedMapping: Mapping<T>, key: U) {
+        let data = await this.tryFindOneByKey(wrappedMapping, key);
         if (!data) {
             throw new Error("Expected to find exactly one row");
         } else {
@@ -151,43 +168,43 @@ export class BaseQuery {
 
 export type JoinType = "innerJoin" | "leftOuterJoin" | "rightOuterJoin";
 
-export class SimpleFromQuery extends BaseQuery {
-    private models: Map<string, ModelDefinition<any>>;
+export class FromQuery<SourceType> extends BaseQuery {
+    private models: Map<string, BaseMappingData<any>>;
 
     constructor(
         knexClient: knex,
-        model: ModelDefinition<any>,
+        mapping: BaseMappingData<SourceType>,
         knexQuery: knex.QueryBuilder,
         private serializationOptions: SerializationOptions
     ) {
         super(knexClient, knexQuery);
 
         this.models = new Map();
-        this.models.set(getTableName(model), model);
+        this.models.set(mapping.getTableName(), mapping);
     }
 
-    innerJoin(joinModel: ModelDefinition<any>, condition: ConditionClause) {
-        return this.conditionJoin("innerJoin", joinModel, condition);
+    innerJoin<T>(joinMapping: Mapping<T>, condition: ConditionClause) {
+        return this.conditionJoin("innerJoin", joinMapping, condition);
     }
 
-    innerJoinEqual<T>(joinModel: ModelDefinition<any>, field1: T, field2: T) {
-        return this.simpleJoin("innerJoin", joinModel, field1, field2);
+    innerJoinEqual<T>(joinMapping: Mapping<any>, field1: T, field2: T) {
+        return this.simpleJoin("innerJoin", joinMapping, field1, field2);
     }
 
-    leftOuterJoin(joinModel: ModelDefinition<any>, condition: ConditionClause) {
-        return this.conditionJoin("leftOuterJoin", joinModel, condition);
+    leftOuterJoin<T>(joinMapping: Mapping<T>, condition: ConditionClause) {
+        return this.conditionJoin("leftOuterJoin", joinMapping, condition);
     }
 
-    leftOuterJoinEqual<T>(joinModel: ModelDefinition<any>, field1: T, field2: T) {
-        return this.simpleJoin("leftOuterJoin", joinModel, field1, field2);
+    leftOuterJoinEqual<T>(joinMapping: Mapping<any>, field1: T, field2: T) {
+        return this.simpleJoin("leftOuterJoin", joinMapping, field1, field2);
     }
 
-    rightOuterJoin(joinModel: ModelDefinition<any>, condition: ConditionClause) {
-        return this.conditionJoin("rightOuterJoin", joinModel, condition);
+    rightOuterJoin<T>(joinMapping: Mapping<T>, condition: ConditionClause) {
+        return this.conditionJoin("rightOuterJoin", joinMapping, condition);
     }
 
-    rightOuterJoinEqual<T>(joinModel: ModelDefinition<any>, field1: T, field2: T) {
-        return this.simpleJoin("rightOuterJoin", joinModel, field1, field2);
+    rightOuterJoinEqual<T>(joinMapping: Mapping<any>, field1: T, field2: T) {
+        return this.simpleJoin("rightOuterJoin", joinMapping, field1, field2);
     }
 
     select<T>(selectClause: T) {
@@ -216,16 +233,17 @@ export class SimpleFromQuery extends BaseQuery {
         return new SelectQuery<T>(this.knexClient, fieldMap, knexQuery, this.serializationOptions);
     }
 
-    private simpleJoin<T>(joinType: JoinType, joinModel: ModelDefinition<any>, field1: T, field2: T) {
+    private simpleJoin<T, U>(joinType: JoinType, wrappedJoinMapping: Mapping<U>, field1: T, field2: T) {
+        let joinMapping = WrappedMappingData.getMapping(wrappedJoinMapping);
         let attribute1: AttributeDefinition = field1 as any;
         let attribute2: AttributeDefinition = field2 as any;
-        let joinTableName = getTableName(joinModel);
+        let joinTableName = joinMapping.getTableName();
         if (this.models.has(joinTableName)) {
             throw new Error(`Invalid join. The same table (${joinTableName}) can be referred to in one from-clause only in SimpleFromQuery.`);
         }
-        this.models.set(joinTableName, joinModel);
+        this.models.set(joinTableName, joinMapping);
         this.knexQuery = this.knexQuery[joinType](
-            getTableName(joinModel),
+            joinMapping.getTableName(),
             getAbsoluteFieldName(attribute1),
             getAbsoluteFieldName(attribute2)
         );
@@ -233,15 +251,16 @@ export class SimpleFromQuery extends BaseQuery {
         return this;
     }
 
-    private conditionJoin(joinType: JoinType, joinModel: ModelDefinition<any>, conditionClause: ConditionClause) {
-        let joinTableName = getTableName(joinModel);
+    private conditionJoin<T>(joinType: JoinType, wrappedJoinMapping: Mapping<T>, conditionClause: ConditionClause) {
+        let joinMapping = WrappedMappingData.getMapping(wrappedJoinMapping);
+        let joinTableName = joinMapping.getTableName();
         if (this.models.has(joinTableName)) {
             throw new Error(`Invalid join. The same table (${joinTableName}) can be referred to in one from-clause only in SimpleFromQuery.`);
         }
-        this.models.set(joinTableName, joinModel);
+        this.models.set(joinTableName, joinMapping);
 
         this.knexQuery = this.knexQuery[joinType](
-            getTableName(joinModel),
+            joinMapping.getTableName(),
             conditionClause.buildJoinConditionClause(this.knexClient)
         );
 
@@ -346,7 +365,7 @@ export class SelectQuery<ResultType> extends WhereQuery {
 export class UpdateQuery<UpdateDataType> extends WhereQuery implements PromiseLike<void> {
     constructor(
         knexClient: knex,
-        private model: ModelDefinition<UpdateDataType>,
+        private mapping: BaseMappingData<UpdateDataType>,
         knexQuery: knex.QueryBuilder,
         private serializationOptions: SerializationOptions
     ) {
@@ -366,7 +385,7 @@ export class UpdateQuery<UpdateDataType> extends WhereQuery implements PromiseLi
 export class DeleteQuery<UpdateDataType> extends WhereQuery implements PromiseLike<void> {
     constructor(
         knexClient: knex,
-        private model: ModelDefinition<UpdateDataType>,
+        private mapping: BaseMappingData<UpdateDataType>,
         knexQuery: knex.QueryBuilder,
         private serializationOptions: SerializationOptions
     ) {
@@ -386,7 +405,7 @@ export class DeleteQuery<UpdateDataType> extends WhereQuery implements PromiseLi
 export class InsertQuery<InsertDataType> extends BaseQuery implements PromiseLike<void> {
     constructor(
         knexClient: knex,
-        private model: ModelDefinition<InsertDataType>,
+        private mapping: BaseMappingData<InsertDataType>,
         knexQuery: knex.QueryBuilder,
         private serializationOptions: SerializationOptions
     ) {
@@ -394,13 +413,13 @@ export class InsertQuery<InsertDataType> extends BaseQuery implements PromiseLik
     }
 
     returningAll() {
-        let returnColumns = getAbsoluteFieldNames(this.model).map(getIdentityAliasedName);
+        let returnColumns = this.mapping.getAbsoluteFieldNames().map(getIdentityAliasedName);
         let knexQuery = this.knexQuery.returning(returnColumns);
 
         return new ReturningInsertQuery<InsertDataType>(
             this.knexClient,
             knexQuery,
-            getAbsoluteFieldNameAttributeDefinitionMap(this.model),
+            this.mapping.getAbsoluteFieldNameAttributeDefinitionMap(),
             this.serializationOptions
         );
     }
