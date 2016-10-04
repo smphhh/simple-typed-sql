@@ -55,6 +55,18 @@ export class AttributeDefinition {
     attributeName: string;
     fieldName: string;
     tableName: string;
+
+    getAbsoluteFieldName() {
+        return `${this.tableName}.${this.fieldName}`;
+    }
+
+    getAliasedAttributeName() {
+        return `${this.getAbsoluteFieldName()} as ${this.attributeName}`;
+    }
+
+    getFieldName() {
+        return this.fieldName;
+    }
 }
 
 export interface SerializationOptions {

@@ -41,11 +41,10 @@ export class BaseMappingData<T> {
     }
 
     getAbsoluteFieldNameAttributeDefinitionMap() {
-        let map: AttributeDefinitionMap = {};
-        this.getAttributeDefinitions().map(definition => {
-            map[BaseMappingData.getAliasedName(BaseMappingData.getAbsoluteFieldName(definition))] = definition;
-        });
-        return map;
+        return this.getAttributeDefinitions().reduce((map, definition) => {
+            map[definition.getAbsoluteFieldName()] = definition;
+            return map;
+        }, {} as AttributeDefinitionMap);
     }
 
     getAbsoluteFieldNames() {
@@ -68,6 +67,13 @@ export class BaseMappingData<T> {
         return Object.keys(this.__metadata.fields);
     }
 
+    getFieldNameAttributeDefinitionMap() {
+        return this.getAttributeDefinitions().reduce((map, definition) => {
+            map[definition.getFieldName()] = definition;
+            return map;
+        }, {} as AttributeDefinitionMap);
+    }
+
     getInstanceStub() {
         return this.__prototype;
     }
@@ -77,7 +83,7 @@ export class BaseMappingData<T> {
     }
 
     static getAbsoluteFieldName(attributeDefinition: AttributeDefinition) {
-        return `${attributeDefinition.tableName}.${attributeDefinition.fieldName}`;
+        return attributeDefinition.getAbsoluteFieldName();
     }
 
     static getAliasedName(name: string) {
@@ -89,7 +95,7 @@ export class BaseMappingData<T> {
     }
 
     static getAliasedAttributeName(attributeDefinition: AttributeDefinition) {
-        return `${BaseMappingData.getAbsoluteFieldName(attributeDefinition)} as ${attributeDefinition.attributeName}`;
+        return attributeDefinition.getAliasedAttributeName();
     }
 
     static getIdentityAliasedName(name: string) {
