@@ -32,6 +32,7 @@ export {
 export {
     defineMapping,
     defineMapping as defineModel,
+    getInstanceStub,
     Mapping,
     WrappedMappingData
 } from './mapping';
