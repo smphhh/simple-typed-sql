@@ -68,6 +68,10 @@ export class BaseMappingData<T> {
         return Object.keys(this.__metadata.fields);
     }
 
+    getInstanceStub() {
+        return this.__prototype;
+    }
+
     getTableName() {
         return this.__metadata.tableName;
     }
@@ -102,6 +106,10 @@ export class WrappedMappingData<T> {
     static getMapping<T>(wrapper: WrappedMappingData<T>) {
         return wrapper.__mapping;
     }
+}
+
+export function getInstanceStub<T>(mapping: Mapping<T>) {
+    return WrappedMappingData.getMapping(mapping).getInstanceStub();
 }
 
 /**
