@@ -26,7 +26,10 @@ export {
     comparison,
     equal,
     ComparisonOperator,
-    LogicalOperator
+    LogicalOperator,
+    ComparisonClause,
+    ConditionClause,
+    LogicalClause
 } from './condition';
 
 export {
@@ -34,5 +37,6 @@ export {
     defineMapping as defineModel,
     getInstanceStub,
     Mapping,
-    WrappedMappingData
+    WrappedMappingData,
+    BaseMappingData
 } from './mapping';
