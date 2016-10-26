@@ -440,7 +440,7 @@ export class SingleValueSelectQuery<ResultType> extends WhereQuery {
     }
 }
 
-export class UpdateQuery<UpdateDataType> extends WhereQuery implements PromiseLike<void> {
+export class UpdateQuery<UpdateDataType> extends WhereQuery implements PromiseLike<number> {
     constructor(
         knexClient: knex,
         private mapping: BaseMappingData<UpdateDataType>,
@@ -451,12 +451,12 @@ export class UpdateQuery<UpdateDataType> extends WhereQuery implements PromiseLi
     }
     
     async execute() {
-        let queryResults: any[] = await this.knexQuery;
-        return;
+        let rowCount: number = await this.knexQuery;
+        return rowCount;
     }
 
-    then<TResult>(onfulfilled?: () => TResult | PromiseLike<TResult>, onrejected?: (reason: any) => TResult | PromiseLike<TResult>): PromiseLike<TResult> {
-        return this.knexQuery.then(onfulfilled, onrejected);
+    then<TResult>(onfulfilled?: (rowCount: number) => TResult | PromiseLike<TResult>, onrejected?: (reason: any) => TResult | PromiseLike<TResult>): PromiseLike<TResult> {
+        return this.execute().then(onfulfilled, onrejected);
     }
 }
 

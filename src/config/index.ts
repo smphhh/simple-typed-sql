@@ -1,0 +1,2 @@
+
+export { createConfig } from './test';

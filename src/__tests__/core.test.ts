@@ -3,6 +3,8 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as knex from 'knex';
 
+import { createConfig } from '../config';
+
 import {
     defineBoolean,
     defineDatetime,
@@ -20,22 +22,7 @@ chai.use(chaiAsPromised);
 
 let expect = chai.expect;
 
-/*let testDatabaseOptions = {
-    client: 'sqlite3',
-    connection: ':memory:',
-    useNullAsDefault: true
-};*/
-
-let testDatabaseOptions = {
-    client: 'pg',
-    connection: {
-        user: 'samuli',
-        password: 'samuli',
-        host: '10.0.75.235',
-        port: 5433,
-        database: 'gio_etl_scheduler_test1'
-    }
-};
+let config = createConfig();
 
 describe("Simple typed SQL", function () {
 
@@ -84,7 +71,7 @@ describe("Simple typed SQL", function () {
     let knexClient: knex;
 
     beforeEach(async function () {
-        knexClient = knex(testDatabaseOptions);
+        knexClient = knex(config.knexConnection);
 
         await knexClient.schema.dropTableIfExists('test_model_with_some_extra_padding_plus_some_more');
         await knexClient.schema.createTable('test_model_with_some_extra_padding_plus_some_more', function (table) {
@@ -340,6 +327,17 @@ describe("Simple typed SQL", function () {
         let data = await mapper.selectAllFrom(testMapping1).orderBy(testMapping1.id, 'asc');
 
         expect(data).to.deep.equal([Object.assign({}, testObject1, { externalId: 'updated' }), testObject2]);
+    });
+
+    it("should return the number of affected rows from update clauses", async function () {
+        await mapper.insertInto(testMapping1, testObject1);
+        await mapper.insertInto(testMapping1, testObject2);
+
+        let rowCount = await mapper
+            .updateWith(testMapping1, { externalId: 'updated' })
+            .whereEqual(testMapping1.externalId, testObject1.externalId);
+
+        expect(rowCount).to.equal(1);
     });
 
     it("should support locking rows for update", async function () {

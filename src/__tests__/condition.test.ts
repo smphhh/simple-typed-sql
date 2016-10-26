@@ -3,6 +3,8 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as knex from 'knex';
 
+import { createConfig } from '../config';
+
 import {
     defineBoolean,
     defineDatetime,
@@ -21,16 +23,7 @@ chai.use(chaiAsPromised);
 
 let expect = chai.expect;
 
-let testDatabaseOptions = {
-    client: 'pg',
-    connection: {
-        user: 'samuli',
-        password: 'samuli',
-        host: '10.0.75.235',
-        port: 5433,
-        database: 'gio_etl_scheduler_test1'
-    }
-};
+let config = createConfig();
 
 describe("Simple typed SQL condition", function () {
 
@@ -79,7 +72,7 @@ describe("Simple typed SQL condition", function () {
     let knexClient: knex;
 
     beforeEach(async function () {
-        knexClient = knex(testDatabaseOptions);
+        knexClient = knex(config.knexConnection);
 
         await knexClient.schema.dropTableIfExists('test_model');
         await knexClient.schema.createTable('test_model', function (table) {
