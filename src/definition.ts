@@ -64,8 +64,16 @@ export class AttributeDefinition {
         return `${this.getAbsoluteFieldName()} as ${this.attributeName}`;
     }
 
+    getAttributeName() {
+        return this.attributeName;
+    }
+
     getFieldName() {
         return this.fieldName;
+    }
+
+    getTableName() {
+        return this.tableName;
     }
 }
 

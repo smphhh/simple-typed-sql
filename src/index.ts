@@ -40,3 +40,7 @@ export {
     WrappedMappingData,
     BaseMappingData
 } from './mapping';
+
+export {
+    bindConditionAttributes
+} from './utils';
