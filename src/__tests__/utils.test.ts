@@ -6,7 +6,7 @@ import * as knex from 'knex';
 import { createConfig } from '../config';
 
 import {
-    bindConditionAttributes,
+    Utils,
     equal,
     Mapper
 } from '../';
@@ -38,7 +38,7 @@ describe("Simple typed SQL utils", function () {
         let order = await mapper.selectAllFrom(Mappings.order).getOne();
 
         let joinCondition = equal(Mappings.orderDetail.orderId, Mappings.order.id);
-        let boundCondition = bindConditionAttributes(joinCondition, Mappings.order, order);
+        let boundCondition = Utils.bindConditionAttributes(joinCondition, Mappings.order, order);
 
         let query = mapper
             .selectAllFrom(Mappings.orderDetail)

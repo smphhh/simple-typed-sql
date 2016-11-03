@@ -42,5 +42,5 @@ export {
 } from './mapping';
 
 export {
-    bindConditionAttributes
+    Utils
 } from './utils';
