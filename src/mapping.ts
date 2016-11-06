@@ -137,6 +137,10 @@ export function defineMapping<T>(tableName: string, prototypeDefinition: T): Map
             } else {
                 return mappingData.getAttributeDefinitionMap()[name];
             }
+        },
+
+        set: function (target, name, value): boolean {
+            throw new Error("Modifying the properties of a Mapping object is not allowed.");
         }
     });
     return proxy as Mapping<T>;
