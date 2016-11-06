@@ -3,6 +3,7 @@ import * as knex from 'knex';
 
 import {
     AttributeDefinition,
+    DataType,
     ValueType
 } from './definition';
 
@@ -36,11 +37,11 @@ export class AggregationExpression {
 
         if (this.operandAttribute !== undefined && this.aggregationFunction !== "countDistinct") {
             expressionString = `${this.aggregationFunction}(??)`;
-            bindings.push(BaseMappingData.getAbsoluteFieldName(this.operandAttribute));
+            bindings.push(this.operandAttribute.getAbsoluteFieldName());
 
         } else if (this.operandAttribute !== undefined) {
             expressionString = "count(distinct ??)";
-            bindings.push(BaseMappingData.getAbsoluteFieldName(this.operandAttribute));
+            bindings.push(this.operandAttribute.getAbsoluteFieldName());
 
         } else if (this.aggregationFunction !== "countDistinct") {
             expressionString = `${this.aggregationFunction}(*)`;
@@ -58,22 +59,20 @@ export class AggregationExpression {
     }
 
     getAttributeDefinition(alias: string) {
-        let attributeDefinition = new AttributeDefinition();
         
+        let dataType: DataType;
+
         if (this.operandAttribute !== undefined) {
-            Object.assign(
-                attributeDefinition,
-                this.operandAttribute
-            );
+            dataType = this.operandAttribute.dataType;
         }
 
-        attributeDefinition.attributeName = alias;
+        let attributeName = alias;
 
         if (this.aggregationFunction === "count" || this.aggregationFunction === "countDistinct") {
-            attributeDefinition.dataType = "number";
+            dataType = "number";
         }
  
-        return attributeDefinition;
+        return new AttributeDefinition(dataType, attributeName, undefined, undefined);
     }
 }
 

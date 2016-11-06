@@ -4,6 +4,8 @@ let md5 = require('md5');
 import {
     AttributeDefinition,
     AttributeDefinitionMap,
+    FieldDefinition,
+    FieldDefinitionMap,
     Metadata
 } from './definition';
 
@@ -24,16 +26,14 @@ export class BaseMappingData<T> {
         let attributeNames = Object.keys(prototypeDefinition);
 
         for (let attributeName of attributeNames) {
-            let attributeDefinition = new AttributeDefinition();
-            attributeDefinition.dataType = prototypeDefinition[attributeName]._type;
-            attributeDefinition.attributeName = attributeName;
-            attributeDefinition.fieldName = prototypeDefinition[attributeName].fieldName || attributeName;
-            attributeDefinition.tableName = tableName;
+            let fieldDefinition = {
+                dataType: prototypeDefinition[attributeName]._type,
+                fieldName: prototypeDefinition[attributeName].fieldName || attributeName
+            };
 
             // TODO: Check for duplicate field names
-            //definition.prototypeDefinition[attributeName] = attributeDefinition;
-            metadata.attributes[attributeName] = attributeDefinition;
-            metadata.fields[attributeDefinition.fieldName] = attributeDefinition;
+            metadata.attributes[attributeName] = fieldDefinition;
+            metadata.fields[fieldDefinition.fieldName] = fieldDefinition;
         }
 
         this.__metadata = metadata;
@@ -48,15 +48,32 @@ export class BaseMappingData<T> {
     }
 
     getAbsoluteFieldNames() {
-        return this.getAttributeDefinitions().map(BaseMappingData.getAbsoluteFieldName);
+        return this.getAttributeDefinitions().map(item => item.getAbsoluteFieldName());
     }
 
     getAttributeDefinitionMap() {
-        return this.__metadata.attributes;
+        return this.getAttributes().reduce((definitionMap, name) => {
+            definitionMap[name] = this.getAttributeDefinition(name);
+            return definitionMap;
+        }, {} as AttributeDefinitionMap)
     }
 
     getAttributeDefinitions() {
-        return this.getAttributes().map(key => this.__metadata.attributes[key]);
+        return this.getAttributes().map(key => this.getAttributeDefinition(key));
+    }
+
+    getAttributeDefinition(name: string) {
+        let fieldDefinition = this.__metadata.attributes[name];
+        if (fieldDefinition) {
+            return new AttributeDefinition(
+                fieldDefinition.dataType,
+                name,
+                fieldDefinition.fieldName,
+                this.getTableName()
+            );
+        } else {
+            throw new Error(`Invalid attribute name: ${name}.`);
+        }
     }
 
     getAttributes() {
@@ -80,26 +97,6 @@ export class BaseMappingData<T> {
 
     getTableName() {
         return this.__metadata.tableName;
-    }
-
-    static getAbsoluteFieldName(attributeDefinition: AttributeDefinition) {
-        return attributeDefinition.getAbsoluteFieldName();
-    }
-
-    static getAliasedName(name: string) {
-        if (name.length > 60) {
-            return md5(name);
-        } else {
-            return name;
-        }
-    }
-
-    static getAliasedAttributeName(attributeDefinition: AttributeDefinition) {
-        return attributeDefinition.getAliasedAttributeName();
-    }
-
-    static getIdentityAliasedName(name: string) {
-        return `${name} as ${BaseMappingData.getAliasedName(name)}`;
     }
 }
 
@@ -129,19 +126,23 @@ export type Mapping<T> = WrappedMappingData<T> & T;
 export function defineMapping<T>(tableName: string, prototypeDefinition: T): Mapping<T> {
     let mappingData = new BaseMappingData(tableName, prototypeDefinition);
     let wrapper = new WrappedMappingData(mappingData);
+    
     let proxy = new Proxy(wrapper, {
-        get: function (target, name) {
+        get: function (target, property) {
             let mappingData = WrappedMappingData.getMappingData(target); 
-            if (name === '__mapping') {
+            if (property === '__mapping') {
                 return mappingData;
+            } else if (typeof property === 'string') {
+                return mappingData.getAttributeDefinition(property);
             } else {
-                return mappingData.getAttributeDefinitionMap()[name];
+                throw new Error(`Invalid attribute type: ${typeof property}`);
             }
         },
 
-        set: function (target, name, value): boolean {
+        set: function (target, property, value): boolean {
             throw new Error("Modifying the properties of a Mapping object is not allowed.");
         }
     });
+    
     return proxy as Mapping<T>;
 }

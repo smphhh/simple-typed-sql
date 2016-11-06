@@ -1,12 +1,16 @@
 
 export interface AttributeDefinitionMap {
-    [key: string]: AttributeDefinition
+    [key: string]: AttributeDefinition;
+}
+
+export interface FieldDefinitionMap {
+    [key: string]: FieldDefinition;
 }
 
 export interface Metadata {
     tableName: string;
-    attributes: AttributeDefinitionMap;
-    fields: AttributeDefinitionMap;
+    attributes: FieldDefinitionMap;
+    fields: FieldDefinitionMap;
 }
 
 export function defineBoolean(options?: AttributeOptions) {
@@ -51,10 +55,12 @@ export type DataType = 'number' | 'string' | 'json' | 'datetime';
 export type ValueType = string | number | boolean | Date;
 
 export class AttributeDefinition {
-    dataType: DataType;
-    attributeName: string;
-    fieldName: string;
-    tableName: string;
+    constructor(
+        public dataType: DataType,
+        public attributeName: string,
+        public fieldName: string,
+        public tableName: string
+    ) {}
 
     getAbsoluteFieldName() {
         return `${this.tableName}.${this.fieldName}`;
@@ -75,6 +81,11 @@ export class AttributeDefinition {
     getTableName() {
         return this.tableName;
     }
+}
+
+export interface FieldDefinition {
+    dataType: DataType;
+    fieldName: string;
 }
 
 export interface SerializationOptions {

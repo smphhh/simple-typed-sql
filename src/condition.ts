@@ -85,7 +85,7 @@ export class ComparisonClause extends ConditionClause {
 
     private static makeRawExpression(knexClient: knex, operand: ComparisonOperandType) {
         if (operand instanceof AttributeDefinition) {
-            return knexClient.raw('??', BaseMappingData.getAbsoluteFieldName(operand));
+            return knexClient.raw('??', operand.getAbsoluteFieldName());
         } else {
             return knexClient.raw('?', operand);
         }

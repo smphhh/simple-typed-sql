@@ -108,7 +108,12 @@ export class BaseMapper {
         let attributeNames = mapping.getAttributes();
         let whereConditions = serializeData(mapping, key, this.options);
         let fieldNames = mapping.getAbsoluteFieldNames();
-        let query = this.knexBuilder.select(mapping.getAttributeDefinitions().map(BaseMappingData.getAliasedAttributeName)).from(mapping.getTableName());
+        let query = this.knexBuilder
+            .select(
+                mapping.getAttributeDefinitions().map(item => item.getAliasedAttributeName())
+            )
+            .from(mapping.getTableName()
+        );
 
         if (Object.keys(whereConditions).length > 0) {
             query = query.where(whereConditions);
@@ -241,8 +246,8 @@ export class FromQuery<SourceType> extends BaseQuery {
         this.mappings.set(joinTableName, joinMapping);
         this.knexQuery = this.knexQuery[joinType](
             joinMapping.getTableName(),
-            BaseMappingData.getAbsoluteFieldName(attribute1),
-            BaseMappingData.getAbsoluteFieldName(attribute2)
+            attribute1.getAbsoluteFieldName(),
+            attribute2.getAbsoluteFieldName()
         );
 
         return this;
@@ -300,7 +305,7 @@ export class WhereQuery extends BaseQuery {
 
     private whereOperator<T>(attribute: T, operator: ComparisonOperator, value: T) {
         let attributeDefinition: AttributeDefinition = attribute as any;
-        this.knexQuery = this.knexQuery.andWhere(BaseMappingData.getAbsoluteFieldName(attributeDefinition), operator, value as any);
+        this.knexQuery = this.knexQuery.andWhere(attributeDefinition.getAbsoluteFieldName(), operator, value as any);
         return this;
     }
 }
@@ -332,15 +337,15 @@ export class SelectQuery<ResultType> extends WhereQuery {
                     throw new Error(`Invalid select expression for attribute "${key}": the table ${tableName} is missing a from-clause entry.`);
                 }
 
-                let newAttributeDefinition = new AttributeDefinition();
-                Object.assign(
-                    newAttributeDefinition,
-                    attributeDefinition,
-                    { attributeName: key }
+                let newAttributeDefinition = new AttributeDefinition(
+                    attributeDefinition.dataType,
+                    key,
+                    attributeDefinition.fieldName,
+                    attributeDefinition.tableName
                 );
 
                 attributeData.fieldMap[key] = newAttributeDefinition;
-                attributeData.selectDefinition[key] = BaseMappingData.getAliasedAttributeName(newAttributeDefinition);
+                attributeData.selectDefinition[key] = newAttributeDefinition.getAliasedAttributeName();
 
                 //return BaseMappingData.getAliasedAttributeName(newAttributeDefinition);
 
@@ -389,7 +394,7 @@ export class SelectQuery<ResultType> extends WhereQuery {
 
     orderBy(attribute: AttributeDefinition | AggregationExpression | ValueType, direction: 'asc' | 'desc') {
         if (attribute instanceof AttributeDefinition) {
-            this.knexQuery.orderBy(BaseMappingData.getAbsoluteFieldName(attribute), direction);
+            this.knexQuery.orderBy(attribute.getAbsoluteFieldName(), direction);
             return this;
 
         } else if (attribute instanceof AggregationExpression) {
@@ -404,7 +409,7 @@ export class SelectQuery<ResultType> extends WhereQuery {
     groupBy(...attributes: (AttributeDefinition | ValueType)[]) {
         let fieldNames = attributes.map(item => {
             if (item instanceof AttributeDefinition) {
-                return BaseMappingData.getAbsoluteFieldName(item);
+                return item.getAbsoluteFieldName();
             } else {
                 throw new Error(`Invalid group by attribute: ${item}`);
             }
@@ -523,7 +528,7 @@ export class InsertQuery<InsertDataType> extends BaseQuery implements PromiseLik
     }
 
     returningAll() {
-        let returnColumns = this.mapping.getAttributeDefinitions().map(BaseMappingData.getAliasedAttributeName);
+        let returnColumns = this.mapping.getAttributeDefinitions().map(item => item.getAliasedAttributeName());
         let knexQuery = this.knexQuery.returning(returnColumns);
 
         return new ReturningInsertQuery<InsertDataType>(
