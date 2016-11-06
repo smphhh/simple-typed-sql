@@ -326,25 +326,6 @@ export class SelectQuery<ResultType> extends WhereQuery {
         super(knexClient, knexQuery);
     }
 
-    /*select<T>(selectInput: T) {
-        let attributeData = SelectQuery.parseSelectInput(this.knexClient, this.mappings, selectInput);
-        let fieldMap = Object.assign({}, this.fields, attributeData.fieldMap);
-        let selectDefinition = Object.assign({}, this.selectDefinition, attributeData.selectDefinition);
-        return new SelectQuery<ResultType & T>(
-            this.knexClient,
-            this.knexQuery,
-            this.mappings,
-            this.serializationOptions,
-            fieldMap,
-            selectDefinition
-        );
-    }
-
-    selectAll<T>(mapping: Mapping<T>) {
-        let mappingData = WrappedMappingData.getMappingData(mapping);
-        return this.select<T>(mappingData.getAttributeDefinitionMap() as any);
-    }*/
-
     private static parseSelectInput<T>(knexClient: knex, mappings: Map<string, BaseMappingData<any>>, input: T) {
         return Object.keys(input).reduce((attributeData, key) => {
             let expression: AttributeDefinition | AggregationExpression = input[key];

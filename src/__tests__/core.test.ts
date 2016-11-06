@@ -108,32 +108,6 @@ describe("Simple typed SQL", function () {
         expect(data).to.deep.equal([testObject1]);
     });
 
-    /*it("should support multiple selects", async function () {
-        await mapper
-            .insertInto(testMapping1, testObject1);
-
-        let data = await mapper
-            .from(testMapping1)
-            .select({ externalId1: testMapping1.externalId })
-            .select({ externalId2: testMapping1.externalId })
-            .getOne();
-
-        expect(data).to.deep.equal({ externalId1: testObject1.externalId, externalId2: testObject1.externalId });
-    });
-
-    it("should support multiple selects overriding attributes", async function () {
-        await mapper
-            .insertInto(testMapping1, testObject1);
-
-        let data = await mapper
-            .from(testMapping1)
-            .select({ foo: testMapping1.externalId })
-            .select({ foo: testMapping1.id })
-            .getOne();
-
-        expect(data).to.deep.equal({ externalId1: testObject1.externalId, externalId2: testObject1.externalId });
-    });*/
-
     it("should support selecting all fields from a mapping", async function () {
         await mapper
             .insertInto(testMapping1, testObject1);
@@ -447,24 +421,6 @@ describe("Simple typed SQL", function () {
             { externalId: testObject1.externalId, value2: testObject3_1.value }
         ]);
     });
-
-    /*it("should support selecting all fields from a mapping in combination with a normal select", async function () {
-        await mapper.insertInto(testMapping1, testObject1);
-        await mapper.insertInto(testMapping1, testObject2);
-
-        await mapper.insertInto(testMapping3, testObject3_1);
-
-        let data = await mapper
-            .from(testMapping1)
-            .innerJoinEqual(testMapping3, testMapping1.id, testMapping3.testModel1Id)
-            .select({
-                externalId: testMapping1.externalId
-            })
-            .selectAll(testMapping3)
-            .getOne();
-
-        expect(data).to.deep.equal(Object.assign({ externalId: testObject1.externalId }, testObject3_1));
-    });*/
 
     it("should support simple join queries with where clauses", async function () {
         await mapper.insertInto(testMapping1, testObject1);
