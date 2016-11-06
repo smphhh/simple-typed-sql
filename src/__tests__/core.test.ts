@@ -422,6 +422,21 @@ describe("Simple typed SQL", function () {
         ]);
     });
 
+    it("should support selecting all fields from a mapping in join queries", async function () {
+        await mapper.insertInto(testMapping1, testObject1);
+        await mapper.insertInto(testMapping1, testObject2);
+
+        await mapper.insertInto(testMapping3, testObject3_1);
+
+        let data = await mapper
+            .from(testMapping1)
+            .innerJoinEqual(testMapping3, testMapping1.id, testMapping3.testModel1Id)
+            .selectAll(testMapping3)
+            .getOne();
+
+        expect(data).to.deep.equal(testObject3_1);
+    });
+
     it("should support simple join queries with where clauses", async function () {
         await mapper.insertInto(testMapping1, testObject1);
         await mapper.insertInto(testMapping1, testObject2);
