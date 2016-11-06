@@ -37,38 +37,26 @@ export class BaseMapper {
     ) {
     }
 
-    selectAllFrom<T>(wrappedMapping: Mapping<T>) {
-        let mapping = WrappedMappingData.getMapping(wrappedMapping);
-        let tableName = mapping.getTableName();
-        let fieldNames = mapping.getFieldNames();
-
-        let selectColumns = mapping.getAttributeDefinitions().map(BaseMappingData.getAliasedAttributeName);
-
-        let query = this.knexBuilder.select(selectColumns).from(tableName);
-
-        return new SelectQuery<T>(
-            this.knexClient,
-            mapping.getAttributeDefinitionMap(),
-            query,
-            this.options
-        );
+    selectAllFrom<T>(mapping: Mapping<T>) {
+        let mappingData = WrappedMappingData.getMappingData(mapping);
+        return this.from(mapping).select(mappingData.getAttributeDefinitionMap() as any);
     }
 
-    selectCountFrom<T>(wrappedMapping: Mapping<T>) {
-        let mapping = WrappedMappingData.getMapping(wrappedMapping);
+    selectCountFrom<T>(mapping: Mapping<T>) {
+        let mappingData = WrappedMappingData.getMappingData(mapping);
 
         let alias = "value";
         let aggregationExpression = new AggregationExpression("count");
         let fieldMap: AttributeDefinitionMap = { value: aggregationExpression.getAttributeDefinition(alias) };
         let knexQuery = this.knexBuilder
             .select(aggregationExpression.buildAggregationClause(this.knexClient, alias))
-            .from(mapping.getTableName());
+            .from(mappingData.getTableName());
 
         return new SingleValueSelectQuery<number>(this.knexClient, fieldMap, knexQuery, this.options);
     }
 
     updateWith<T extends U, U>(wrappedMapping: Mapping<T>, data: U) {
-        let mapping = WrappedMappingData.getMapping(wrappedMapping);
+        let mapping = WrappedMappingData.getMappingData(wrappedMapping);
         let tableName = mapping.getTableName();
         let fieldData = serializeData(mapping, data, this.options);
 
@@ -78,7 +66,7 @@ export class BaseMapper {
     }
 
     insertInto<T, U extends T>(wrappedMapping: Mapping<T>, data: U) {
-        let mapping = WrappedMappingData.getMapping(wrappedMapping);
+        let mapping = WrappedMappingData.getMappingData(wrappedMapping);
         let query = this.knexBuilder
             .insert(serializeData(mapping, data as T, this.options))
             .into(mapping.getTableName());
@@ -87,7 +75,7 @@ export class BaseMapper {
     }
 
     batchInsertInto<T, U extends T>(wrappedMapping: Mapping<T>, data: U[]) {
-        let mapping = WrappedMappingData.getMapping(wrappedMapping);
+        let mapping = WrappedMappingData.getMappingData(wrappedMapping);
         let serializedData = data.map(item => serializeData(mapping, item as T, this.options));
         let query = this.knexBuilder
             .insert(serializedData)
@@ -97,32 +85,32 @@ export class BaseMapper {
     }
 
     deleteFrom<T>(wrappedMapping: Mapping<T>) {
-        let mapping = WrappedMappingData.getMapping(wrappedMapping);
+        let mapping = WrappedMappingData.getMappingData(wrappedMapping);
         let query = this.knexBuilder
             .from(mapping.getTableName())
             .del();
-        
+
         return new DeleteQuery(this.knexClient, mapping, query, this.options);
     }
 
     truncate<T>(wrappedMapping: Mapping<T>): Promise<void> {
-        let mapping = WrappedMappingData.getMapping(wrappedMapping);
+        let mapping = WrappedMappingData.getMappingData(wrappedMapping);
         return Promise.resolve(this.knexBuilder.table(mapping.getTableName()).truncate());
     }
 
     from<T>(wrappedMapping: Mapping<T>) {
-        let mapping = WrappedMappingData.getMapping(wrappedMapping);
+        let mapping = WrappedMappingData.getMappingData(wrappedMapping);
         let query = this.knexBuilder.from(mapping.getTableName());
-        return new FromQuery(this.knexClient, mapping, query, this.options);
+        return new FromQuery(this.knexClient, query, mapping, this.options);
     }
 
     async tryFindOneByKey<T extends U, U>(wrappedMapping: Mapping<T>, key: U) {
-        let mapping = WrappedMappingData.getMapping(wrappedMapping);
+        let mapping = WrappedMappingData.getMappingData(wrappedMapping);
         let attributeNames = mapping.getAttributes();
         let whereConditions = serializeData(mapping, key, this.options);
         let fieldNames = mapping.getAbsoluteFieldNames();
         let query = this.knexBuilder.select(mapping.getAttributeDefinitions().map(BaseMappingData.getAliasedAttributeName)).from(mapping.getTableName());
-        
+
         if (Object.keys(whereConditions).length > 0) {
             query = query.where(whereConditions);
         }
@@ -184,18 +172,18 @@ export class BaseQuery {
 export type JoinType = "innerJoin" | "leftOuterJoin" | "rightOuterJoin";
 
 export class FromQuery<SourceType> extends BaseQuery {
-    private models: Map<string, BaseMappingData<any>>;
+    private mappings: Map<string, BaseMappingData<any>>;
 
     constructor(
         knexClient: knex,
-        mapping: BaseMappingData<SourceType>,
         knexQuery: knex.QueryBuilder,
+        mapping: BaseMappingData<SourceType>,
         private serializationOptions: SerializationOptions
     ) {
         super(knexClient, knexQuery);
 
-        this.models = new Map();
-        this.models.set(mapping.getTableName(), mapping);
+        this.mappings = new Map();
+        this.mappings.set(mapping.getTableName(), mapping);
     }
 
     innerJoin<T>(joinMapping: Mapping<T>, condition: ConditionClause) {
@@ -222,49 +210,36 @@ export class FromQuery<SourceType> extends BaseQuery {
         return this.simpleJoin("rightOuterJoin", joinMapping, field1, field2);
     }
 
-    select<T>(selectClause: T) {
-        let fieldMap: AttributeDefinitionMap = {};
-        let selectedColumns = Object.keys(selectClause).map(key => {
-            let expression: AttributeDefinition | AggregationExpression = selectClause[key];
+    select<T>(selectInput: T) {
+        return SelectQuery.createFromSelect(
+            this.knexClient,
+            this.knexQuery,
+            this.mappings,
+            this.serializationOptions,
+            selectInput
+        );
+    }
 
-            if (expression instanceof AttributeDefinition) {
-                let attributeDefinition: AttributeDefinition = selectClause[key];
-                let tableName = attributeDefinition.tableName;
-                if (!this.models.has(tableName)) {
-                    throw new Error(`Invalid select expression for attribute "${key}": the table ${tableName} is missing a from-clause entry.`);
-                }
-
-                let newAttributeDefinition = new AttributeDefinition();
-                Object.assign(
-                    newAttributeDefinition,
-                    attributeDefinition,
-                    { attributeName: key }
-                );
-
-                fieldMap[key] = newAttributeDefinition;
-
-                return BaseMappingData.getAliasedAttributeName(newAttributeDefinition);
-
-            } else if (expression instanceof AggregationExpression) {
-                fieldMap[key] = expression.getAttributeDefinition(key);
-                return expression.buildAggregationClause(this.knexClient, key)
-            }
-        });
-
-        let knexQuery = this.knexQuery.select(selectedColumns);
-
-        return new SelectQuery<T>(this.knexClient, fieldMap, knexQuery, this.serializationOptions);
+    selectAll<T>(mapping: Mapping<T>) {
+        let mappingData = WrappedMappingData.getMappingData(mapping);
+        return SelectQuery.createFromSelect<T>(
+            this.knexClient,
+            this.knexQuery,
+            this.mappings,
+            this.serializationOptions,
+            mappingData.getAttributeDefinitionMap() as any
+        );
     }
 
     private simpleJoin<T, U>(joinType: JoinType, wrappedJoinMapping: Mapping<U>, field1: T, field2: T) {
-        let joinMapping = WrappedMappingData.getMapping(wrappedJoinMapping);
+        let joinMapping = WrappedMappingData.getMappingData(wrappedJoinMapping);
         let attribute1: AttributeDefinition = field1 as any;
         let attribute2: AttributeDefinition = field2 as any;
         let joinTableName = joinMapping.getTableName();
-        if (this.models.has(joinTableName)) {
+        if (this.mappings.has(joinTableName)) {
             throw new Error(`Invalid join. The same table (${joinTableName}) can be referred to in one from-clause only in SimpleFromQuery.`);
         }
-        this.models.set(joinTableName, joinMapping);
+        this.mappings.set(joinTableName, joinMapping);
         this.knexQuery = this.knexQuery[joinType](
             joinMapping.getTableName(),
             BaseMappingData.getAbsoluteFieldName(attribute1),
@@ -275,12 +250,12 @@ export class FromQuery<SourceType> extends BaseQuery {
     }
 
     private conditionJoin<T>(joinType: JoinType, wrappedJoinMapping: Mapping<T>, conditionClause: ConditionClause) {
-        let joinMapping = WrappedMappingData.getMapping(wrappedJoinMapping);
+        let joinMapping = WrappedMappingData.getMappingData(wrappedJoinMapping);
         let joinTableName = joinMapping.getTableName();
-        if (this.models.has(joinTableName)) {
+        if (this.mappings.has(joinTableName)) {
             throw new Error(`Invalid join. The same table (${joinTableName}) can be referred to in one from-clause only in SimpleFromQuery.`);
         }
-        this.models.set(joinTableName, joinMapping);
+        this.mappings.set(joinTableName, joinMapping);
 
         this.knexQuery = this.knexQuery[joinType](
             joinMapping.getTableName(),
@@ -331,14 +306,94 @@ export class WhereQuery extends BaseQuery {
     }
 }
 
+interface Doo {
+    [key: string]: string | knex.Raw;
+}
+
+export interface SelectDefinition {
+    [key: string]: string | knex.Raw;
+}
+
 export class SelectQuery<ResultType> extends WhereQuery {
     constructor(
         knexClient: knex,
-        private fields: AttributeDefinitionMap,
         knexQuery: knex.QueryBuilder,
-        private serializationOptions: SerializationOptions
+        private mappings: Map<string, BaseMappingData<any>>,
+        private serializationOptions: SerializationOptions,
+        private fields: AttributeDefinitionMap,
+        private selectDefinition: SelectDefinition
     ) {
         super(knexClient, knexQuery);
+    }
+
+    /*select<T>(selectInput: T) {
+        let attributeData = SelectQuery.parseSelectInput(this.knexClient, this.mappings, selectInput);
+        let fieldMap = Object.assign({}, this.fields, attributeData.fieldMap);
+        let selectDefinition = Object.assign({}, this.selectDefinition, attributeData.selectDefinition);
+        return new SelectQuery<ResultType & T>(
+            this.knexClient,
+            this.knexQuery,
+            this.mappings,
+            this.serializationOptions,
+            fieldMap,
+            selectDefinition
+        );
+    }
+
+    selectAll<T>(mapping: Mapping<T>) {
+        let mappingData = WrappedMappingData.getMappingData(mapping);
+        return this.select<T>(mappingData.getAttributeDefinitionMap() as any);
+    }*/
+
+    private static parseSelectInput<T>(knexClient: knex, mappings: Map<string, BaseMappingData<any>>, input: T) {
+        return Object.keys(input).reduce((attributeData, key) => {
+            let expression: AttributeDefinition | AggregationExpression = input[key];
+
+            if (expression instanceof AttributeDefinition) {
+                let attributeDefinition: AttributeDefinition = input[key];
+                let tableName = attributeDefinition.tableName;
+                if (!mappings.has(tableName)) {
+                    throw new Error(`Invalid select expression for attribute "${key}": the table ${tableName} is missing a from-clause entry.`);
+                }
+
+                let newAttributeDefinition = new AttributeDefinition();
+                Object.assign(
+                    newAttributeDefinition,
+                    attributeDefinition,
+                    { attributeName: key }
+                );
+
+                attributeData.fieldMap[key] = newAttributeDefinition;
+                attributeData.selectDefinition[key] = BaseMappingData.getAliasedAttributeName(newAttributeDefinition);
+
+                //return BaseMappingData.getAliasedAttributeName(newAttributeDefinition);
+
+            } else if (expression instanceof AggregationExpression) {
+                attributeData.fieldMap[key] = expression.getAttributeDefinition(key);
+                attributeData.selectDefinition[key] = expression.buildAggregationClause(knexClient, key);
+            }
+
+            return attributeData;
+
+        }, { fieldMap: {} as AttributeDefinitionMap, selectDefinition: {} as SelectDefinition });
+    }
+
+    static createFromSelect<T>(
+        knexClient: knex,
+        knexQuery: knex.QueryBuilder,
+        mappings: Map<string, BaseMappingData<any>>,
+        serializationOptions: SerializationOptions,
+        selectInput: T
+    ) {
+        let attributeData = SelectQuery.parseSelectInput(knexClient, mappings, selectInput);
+        return new SelectQuery<T>(
+            knexClient,
+            knexQuery,
+            mappings,
+            serializationOptions,
+            attributeData.fieldMap,
+            attributeData.selectDefinition
+        );
     }
 
     forUpdate() {
@@ -403,7 +458,8 @@ export class SelectQuery<ResultType> extends WhereQuery {
     }
 
     async execute() {
-        let queryResults: any[] = await this.knexQuery;
+        let query = this.knexQuery.select(Object.keys(this.selectDefinition).map(item => this.selectDefinition[item]));
+        let queryResults: any[] = await query;
         return queryResults.map(result => deserializeData<ResultType>(this.fields, result, this.serializationOptions));
     }
 
@@ -449,7 +505,7 @@ export class UpdateQuery<UpdateDataType> extends WhereQuery implements PromiseLi
     ) {
         super(knexClient, knexQuery);
     }
-    
+
     async execute() {
         let rowCount: number = await this.knexQuery;
         return rowCount;
@@ -469,7 +525,7 @@ export class DeleteQuery<UpdateDataType> extends WhereQuery implements PromiseLi
     ) {
         super(knexClient, knexQuery);
     }
-    
+
     async execute() {
         let queryResults: any[] = await this.knexQuery;
         return;

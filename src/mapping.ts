@@ -109,13 +109,13 @@ export class WrappedMappingData<T> {
     ) {
     }
 
-    static getMapping<T>(wrapper: WrappedMappingData<T>) {
+    static getMappingData<T>(wrapper: WrappedMappingData<T>) {
         return wrapper.__mapping;
     }
 }
 
 export function getInstanceStub<T>(mapping: Mapping<T>) {
-    return WrappedMappingData.getMapping(mapping).getInstanceStub();
+    return WrappedMappingData.getMappingData(mapping).getInstanceStub();
 }
 
 /**

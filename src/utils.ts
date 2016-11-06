@@ -20,7 +20,7 @@ export namespace Utils {
             );
 
         } else if (conditionClause instanceof ComparisonClause) {
-            let mappingData = WrappedMappingData.getMapping(mapping);
+            let mappingData = WrappedMappingData.getMappingData(mapping);
 
             return new ComparisonClause(
                 conditionClause.operator,
