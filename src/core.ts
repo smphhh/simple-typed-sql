@@ -305,10 +305,6 @@ export class WhereQuery extends BaseQuery {
     }
 }
 
-interface Doo {
-    [key: string]: string | knex.Raw;
-}
-
 export interface SelectDefinition {
     [key: string]: string | knex.Raw;
 }
