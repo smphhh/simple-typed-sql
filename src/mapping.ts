@@ -129,5 +129,15 @@ export type Mapping<T> = WrappedMappingData<T> & T;
 export function defineMapping<T>(tableName: string, prototypeDefinition: T): Mapping<T> {
     let mappingData = new BaseMappingData(tableName, prototypeDefinition);
     let wrapper = new WrappedMappingData(mappingData);
-    return Object.assign(wrapper, (mappingData.getAttributeDefinitionMap() as any) as T);
+    let proxy = new Proxy(wrapper, {
+        get: function (target, name) {
+            let mappingData = WrappedMappingData.getMappingData(target); 
+            if (name === '__mapping') {
+                return mappingData;
+            } else {
+                return mappingData.getAttributeDefinitionMap()[name];
+            }
+        }
+    });
+    return proxy as Mapping<T>;
 }
