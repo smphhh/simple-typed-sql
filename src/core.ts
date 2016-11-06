@@ -38,8 +38,7 @@ export class BaseMapper {
     }
 
     selectAllFrom<T>(mapping: Mapping<T>) {
-        let mappingData = WrappedMappingData.getMappingData(mapping);
-        return this.from(mapping).select(mappingData.getAttributeDefinitionMap() as any);
+        return this.from(mapping).selectAll(mapping);
     }
 
     selectCountFrom<T>(mapping: Mapping<T>) {
