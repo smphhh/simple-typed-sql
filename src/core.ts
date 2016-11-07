@@ -303,8 +303,7 @@ export class SelectQuery<ResultType> extends WhereQuery {
         knexQuery: knex.QueryBuilder,
         private mappings: Map<string, BaseMappingData<any>>,
         private serializationOptions: SerializationOptions,
-        private fields: AttributeDefinitionMap,
-        private selectDefinition: SelectDefinition
+        private fields: AttributeDefinitionMap
     ) {
         super(knexClient, knexQuery);
     }
@@ -351,13 +350,13 @@ export class SelectQuery<ResultType> extends WhereQuery {
         selectInput: T
     ) {
         let attributeData = SelectQuery.parseSelectInput(knexClient, mappings, selectInput);
+        let query = knexQuery.select(Object.keys(attributeData.selectDefinition).map(item => attributeData.selectDefinition[item]));
         return new SelectQuery<T>(
             knexClient,
-            knexQuery,
+            query,
             mappings,
             serializationOptions,
-            attributeData.fieldMap,
-            attributeData.selectDefinition
+            attributeData.fieldMap
         );
     }
 
@@ -423,8 +422,7 @@ export class SelectQuery<ResultType> extends WhereQuery {
     }
 
     async execute() {
-        let query = this.knexQuery.select(Object.keys(this.selectDefinition).map(item => this.selectDefinition[item]));
-        let queryResults: any[] = await query;
+        let queryResults: any[] = await this.knexQuery;
         return queryResults.map(result => deserializeData<ResultType>(this.fields, result, this.serializationOptions));
     }
 
