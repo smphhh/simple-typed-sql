@@ -1,6 +1,6 @@
 {
   "name": "simple-typed-sql",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Simple SQL library for Typescript",
   "license": "MIT",
   "keywords": [
