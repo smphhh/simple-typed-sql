@@ -1,8 +1,8 @@
 # Simple Typed SQL
 
-JavaScript/TypeScript SQL query builder based on table-level abstraction with the goal of allowing one to write complex
-SQL queries without needing use strings to refer to columns or tables.
-Provides partial type safety when used with TypeScript. Powered by Knex.js.
+JavaScript/TypeScript SQL query builder allowing one to write complex SQL queries without needing use
+strings to refer to columns or tables. Provides partial type safety and attribute auto-completion when
+used with TypeScript. Powered by Knex.js.
 
 Supports:
 - Select, insert and update queries
