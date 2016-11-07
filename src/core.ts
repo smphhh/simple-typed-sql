@@ -2,8 +2,6 @@
 import * as knex from 'knex';
 
 import {
-    AttributeDefinition,
-    AttributeDefinitionMap,
     SerializationOptions,
     ValueType
 } from './definition';
@@ -18,6 +16,8 @@ import {
 } from './expression';
 
 import {
+    AttributeDefinition,
+    AttributeDefinitionMap,
     BaseMappingData,
     defineMapping,
     Mapping,

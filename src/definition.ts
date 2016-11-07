@@ -1,8 +1,4 @@
 
-export interface AttributeDefinitionMap {
-    [key: string]: AttributeDefinition;
-}
-
 export interface FieldDefinitionMap {
     [key: string]: FieldDefinition;
 }
@@ -53,35 +49,6 @@ export type DataType = 'number' | 'string' | 'json' | 'datetime';
 
 
 export type ValueType = string | number | boolean | Date;
-
-export class AttributeDefinition {
-    constructor(
-        public dataType: DataType,
-        public attributeName: string,
-        public fieldName: string,
-        public tableName: string
-    ) {}
-
-    getAbsoluteFieldName() {
-        return `${this.tableName}.${this.fieldName}`;
-    }
-
-    getAliasedAttributeName() {
-        return `${this.getAbsoluteFieldName()} as ${this.attributeName}`;
-    }
-
-    getAttributeName() {
-        return this.attributeName;
-    }
-
-    getFieldName() {
-        return this.fieldName;
-    }
-
-    getTableName() {
-        return this.tableName;
-    }
-}
 
 export interface FieldDefinition {
     dataType: DataType;

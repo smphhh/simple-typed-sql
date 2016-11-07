@@ -1,9 +1,9 @@
 import {
-    AttributeDefinitionMap,
     SerializationOptions
 } from './definition';
 
 import {
+    AttributeDefinitionMap,
     BaseMappingData
 } from './mapping';
 

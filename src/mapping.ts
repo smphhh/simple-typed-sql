@@ -2,8 +2,7 @@
 let md5 = require('md5');
 
 import {
-    AttributeDefinition,
-    AttributeDefinitionMap,
+    DataType,
     FieldDefinition,
     FieldDefinitionMap,
     Metadata
@@ -98,6 +97,39 @@ export class BaseMappingData<T> {
     getTableName() {
         return this.__metadata.tableName;
     }
+}
+
+export class AttributeDefinition {
+    constructor(
+        public dataType: DataType,
+        public attributeName: string,
+        public fieldName: string,
+        public tableName: string
+    ) {}
+
+    getAbsoluteFieldName() {
+        return `${this.tableName}.${this.fieldName}`;
+    }
+
+    getAliasedAttributeName() {
+        return `${this.getAbsoluteFieldName()} as ${this.attributeName}`;
+    }
+
+    getAttributeName() {
+        return this.attributeName;
+    }
+
+    getFieldName() {
+        return this.fieldName;
+    }
+
+    getTableName() {
+        return this.tableName;
+    }
+}
+
+export interface AttributeDefinitionMap {
+    [key: string]: AttributeDefinition;
 }
 
 export class WrappedMappingData<T> {

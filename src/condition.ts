@@ -2,10 +2,7 @@
 import * as knex from 'knex';
 
 import {
-    AttributeDefinition
-} from './definition';
-
-import {
+    AttributeDefinition,
     BaseMappingData
 } from './mapping';
 

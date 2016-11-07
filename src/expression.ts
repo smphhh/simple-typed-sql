@@ -2,12 +2,12 @@
 import * as knex from 'knex';
 
 import {
-    AttributeDefinition,
     DataType,
     ValueType
 } from './definition';
 
 import {
+    AttributeDefinition,
     BaseMappingData
 } from './mapping';
 

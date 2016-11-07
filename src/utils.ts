@@ -6,9 +6,12 @@ import {
     ComparisonOperandType
 } from './condition';
 
-import { AttributeDefinition } from './definition';
-
-import { BaseMappingData, Mapping, WrappedMappingData } from './mapping';
+import {
+    AttributeDefinition,
+    BaseMappingData,
+    Mapping,
+    WrappedMappingData
+} from './mapping';
 
 export namespace Utils {
 
