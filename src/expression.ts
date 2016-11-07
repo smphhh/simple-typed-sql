@@ -59,11 +59,12 @@ export class AggregationExpression {
     }
 
     getAttributeDefinition(alias: string) {
-        
+        let mappingData: BaseMappingData<void>;
         let dataType: DataType;
 
         if (this.operandAttribute !== undefined) {
             dataType = this.operandAttribute.dataType;
+            mappingData = this.operandAttribute.mappingData;
         }
 
         let attributeName = alias;
@@ -72,7 +73,7 @@ export class AggregationExpression {
             dataType = "number";
         }
  
-        return new AttributeDefinition(dataType, attributeName, undefined, undefined);
+        return new AttributeDefinition(mappingData, dataType, attributeName, undefined);
     }
 }
 

@@ -65,10 +65,10 @@ export class BaseMappingData<T> {
         let fieldDefinition = this.__metadata.attributes[name];
         if (fieldDefinition) {
             return new AttributeDefinition(
+                this,
                 fieldDefinition.dataType,
                 name,
-                fieldDefinition.fieldName,
-                this.getTableName()
+                fieldDefinition.fieldName
             );
         } else {
             throw new Error(`Invalid attribute name: ${name}.`);
@@ -101,14 +101,14 @@ export class BaseMappingData<T> {
 
 export class AttributeDefinition {
     constructor(
+        public mappingData: BaseMappingData<any>,
         public dataType: DataType,
         public attributeName: string,
-        public fieldName: string,
-        public tableName: string
+        public fieldName: string
     ) {}
 
     getAbsoluteFieldName() {
-        return `${this.tableName}.${this.fieldName}`;
+        return `${this.mappingData.getTableName()}.${this.fieldName}`;
     }
 
     getAliasedAttributeName() {
@@ -124,7 +124,7 @@ export class AttributeDefinition {
     }
 
     getTableName() {
-        return this.tableName;
+        return this.mappingData.getTableName();
     }
 }
 
