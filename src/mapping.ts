@@ -61,11 +61,11 @@ export class BaseMappingData<T> {
         return this.getAttributes().map(key => this.getAttributeDefinition(key));
     }
 
-    getAttributeDefinition(name: string) {
+    getAttributeDefinition(name: string): AttributeDefinition {
         let fieldDefinition = this.__metadata.attributes[name];
         if (fieldDefinition) {
             return new AttributeDefinition(
-                this,
+                wrapMappingData(this),
                 fieldDefinition.dataType,
                 name,
                 fieldDefinition.fieldName
@@ -101,14 +101,15 @@ export class BaseMappingData<T> {
 
 export class AttributeDefinition {
     constructor(
-        public mappingData: BaseMappingData<any>,
+        public mapping: Mapping<{}>,
         public dataType: DataType,
         public attributeName: string,
         public fieldName: string
     ) {}
 
     getAbsoluteFieldName() {
-        return `${this.mappingData.getTableName()}.${this.fieldName}`;
+        let mappingData = WrappedMappingData.getMappingData(this.mapping);
+        return `${mappingData.getTableName()}.${this.fieldName}`;
     }
 
     getAliasedAttributeName() {
@@ -124,7 +125,8 @@ export class AttributeDefinition {
     }
 
     getTableName() {
-        return this.mappingData.getTableName();
+        let mappingData = WrappedMappingData.getMappingData(this.mapping);
+        return mappingData.getTableName();
     }
 }
 
@@ -157,6 +159,10 @@ export type Mapping<T> = WrappedMappingData<T> & T;
  */
 export function defineMapping<T>(tableName: string, prototypeDefinition: T): Mapping<T> {
     let mappingData = new BaseMappingData(tableName, prototypeDefinition);
+    return wrapMappingData(mappingData);
+}
+
+function wrapMappingData<T>(mappingData: BaseMappingData<T>) {
     let wrapper = new WrappedMappingData(mappingData);
     
     let proxy = new Proxy(wrapper, {

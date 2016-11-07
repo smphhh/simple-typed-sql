@@ -315,13 +315,14 @@ export class SelectQuery<ResultType> extends WhereQuery {
 
             if (expression instanceof AttributeDefinition) {
                 let attributeDefinition: AttributeDefinition = input[key];
-                let tableName = attributeDefinition.mappingData.getTableName();
+                let attributeMappingData = WrappedMappingData.getMappingData(attributeDefinition.mapping);
+                let tableName = attributeMappingData.getTableName();
                 if (!mappings.has(tableName)) {
                     throw new Error(`Invalid select expression for attribute "${key}": the table ${tableName} is missing a from-clause entry.`);
                 }
 
                 let newAttributeDefinition = new AttributeDefinition(
-                    attributeDefinition.mappingData,
+                    attributeDefinition.mapping,
                     attributeDefinition.dataType,
                     key,
                     attributeDefinition.fieldName

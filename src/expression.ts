@@ -8,7 +8,8 @@ import {
 
 import {
     AttributeDefinition,
-    BaseMappingData
+    BaseMappingData,
+    Mapping
 } from './mapping';
 
 export type AggregationFunction = 'sum' | 'avg' | 'count' | 'countDistinct' | 'max' | 'min';
@@ -59,12 +60,12 @@ export class AggregationExpression {
     }
 
     getAttributeDefinition(alias: string) {
-        let mappingData: BaseMappingData<void>;
+        let mapping: Mapping<{}>;
         let dataType: DataType;
 
         if (this.operandAttribute !== undefined) {
             dataType = this.operandAttribute.dataType;
-            mappingData = this.operandAttribute.mappingData;
+            mapping = this.operandAttribute.mapping;
         }
 
         let attributeName = alias;
@@ -73,7 +74,7 @@ export class AggregationExpression {
             dataType = "number";
         }
  
-        return new AttributeDefinition(mappingData, dataType, attributeName, undefined);
+        return new AttributeDefinition(mapping, dataType, attributeName, undefined);
     }
 }
 
