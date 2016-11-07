@@ -32,7 +32,7 @@ import {
 export class BaseMapper {
     constructor(
         protected knexClient: knex,
-        private knexBuilder: knex.QueryInterface,
+        private knexInterface: knex.QueryInterface,
         protected options: SerializationOptions
     ) {
     }
@@ -47,26 +47,20 @@ export class BaseMapper {
         let alias = "value";
         let aggregationExpression = new AggregationExpression("count");
         let fieldMap: AttributeDefinitionMap = { value: aggregationExpression.getAttributeDefinition(alias) };
-        let knexQuery = this.knexBuilder
+        let knexQuery = this.knexInterface
             .select(aggregationExpression.buildAggregationClause(this.knexClient, alias))
             .from(mappingData.getTableName());
 
         return new SingleValueSelectQuery<number>(this.knexClient, fieldMap, knexQuery, this.options);
     }
 
-    updateWith<T extends U, U>(wrappedMapping: Mapping<T>, data: U) {
-        let mapping = WrappedMappingData.getMappingData(wrappedMapping);
-        let tableName = mapping.getTableName();
-        let fieldData = serializeData(mapping, data, this.options);
-
-        let query = this.knexBuilder.table(tableName).update(fieldData);
-
-        return new UpdateQuery(this.knexClient, mapping, query, this.options);
+    updateWith<T extends U, U>(mapping: Mapping<T>, data: U) {
+        return UpdateQuery.createFromUpdateWith(this.knexClient, this.knexInterface, this.options, mapping, data);
     }
 
     insertInto<T, U extends T>(wrappedMapping: Mapping<T>, data: U) {
         let mapping = WrappedMappingData.getMappingData(wrappedMapping);
-        let query = this.knexBuilder
+        let query = this.knexInterface
             .insert(serializeData(mapping, data as T, this.options))
             .into(mapping.getTableName());
 
@@ -76,7 +70,7 @@ export class BaseMapper {
     batchInsertInto<T, U extends T>(wrappedMapping: Mapping<T>, data: U[]) {
         let mapping = WrappedMappingData.getMappingData(wrappedMapping);
         let serializedData = data.map(item => serializeData(mapping, item as T, this.options));
-        let query = this.knexBuilder
+        let query = this.knexInterface
             .insert(serializedData)
             .into(mapping.getTableName());
 
@@ -85,7 +79,7 @@ export class BaseMapper {
 
     deleteFrom<T>(wrappedMapping: Mapping<T>) {
         let mapping = WrappedMappingData.getMappingData(wrappedMapping);
-        let query = this.knexBuilder
+        let query = this.knexInterface
             .from(mapping.getTableName())
             .del();
 
@@ -94,12 +88,12 @@ export class BaseMapper {
 
     truncate<T>(wrappedMapping: Mapping<T>): Promise<void> {
         let mapping = WrappedMappingData.getMappingData(wrappedMapping);
-        return Promise.resolve(this.knexBuilder.table(mapping.getTableName()).truncate());
+        return Promise.resolve(this.knexInterface.table(mapping.getTableName()).truncate());
     }
 
     from<T>(wrappedMapping: Mapping<T>) {
         let mapping = WrappedMappingData.getMappingData(wrappedMapping);
-        let query = this.knexBuilder.from(mapping.getTableName());
+        let query = this.knexInterface.from(mapping.getTableName());
         return new FromQuery(this.knexClient, query, mapping, this.options);
     }
 
@@ -108,7 +102,7 @@ export class BaseMapper {
         let attributeNames = mapping.getAttributes();
         let whereConditions = serializeData(mapping, key, this.options);
         let fieldNames = mapping.getAbsoluteFieldNames();
-        let query = this.knexBuilder
+        let query = this.knexInterface
             .select(
                 mapping.getAttributeDefinitions().map(item => item.getAliasedAttributeName())
             )
@@ -477,14 +471,24 @@ export class SingleValueSelectQuery<ResultType> extends WhereQuery {
     }
 }
 
-export class UpdateQuery<UpdateDataType> extends WhereQuery implements PromiseLike<number> {
+export class UpdateQuery<T, U> extends WhereQuery implements PromiseLike<number> {
     constructor(
         knexClient: knex,
-        private mapping: BaseMappingData<UpdateDataType>,
         knexQuery: knex.QueryBuilder,
-        private serializationOptions: SerializationOptions
+        private serializationOptions: SerializationOptions,
+        private mappingData: BaseMappingData<T>
     ) {
         super(knexClient, knexQuery);
+    }
+
+    static createFromUpdateWith<T extends U, U>(knexClient: knex, knexInterface: knex.QueryInterface, options: SerializationOptions, mapping: Mapping<T>, data: U) {
+        let mappingData = WrappedMappingData.getMappingData(mapping);
+        let tableName = mappingData.getTableName();
+        let fieldData = serializeData(mappingData, data, options);
+
+        let query = knexInterface.table(tableName).update(fieldData);
+
+        return new UpdateQuery(knexClient, query, options, mappingData);
     }
 
     async execute() {

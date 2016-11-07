@@ -12,7 +12,7 @@ export function createConfig() {
             },
             pool: {
                 min: 0,
-                max: 1
+                max: 3
             }
         }
     };

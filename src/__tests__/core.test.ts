@@ -70,9 +70,11 @@ describe("Simple typed SQL", function () {
     let mapper: Mapper;
     let knexClient: knex;
 
-    beforeEach(async function () {
+    before(async function () {
         knexClient = knex(config.knexConnection);
+    });
 
+    beforeEach(async function () {
         await knexClient.schema.dropTableIfExists('test_model_with_some_extra_padding_plus_some_more');
         await knexClient.schema.createTable('test_model_with_some_extra_padding_plus_some_more', function (table) {
             table.increments('id').primary();
