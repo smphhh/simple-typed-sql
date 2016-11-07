@@ -58,23 +58,12 @@ export class BaseMapper {
         return UpdateQuery.createFromUpdateWith(this.knexClient, this.knexInterface, this.options, mapping, data);
     }
 
-    insertInto<T, U extends T>(wrappedMapping: Mapping<T>, data: U) {
-        let mapping = WrappedMappingData.getMappingData(wrappedMapping);
-        let query = this.knexInterface
-            .insert(serializeData(mapping, data as T, this.options))
-            .into(mapping.getTableName());
-
-        return new InsertQuery(this.knexClient, mapping, query, this.options);
+    insertInto<T, U extends T>(mapping: Mapping<T>, data: U) {
+        return InsertQuery.insertInto(this.knexClient, this.knexInterface, this.options, mapping, data);
     }
 
     batchInsertInto<T, U extends T>(wrappedMapping: Mapping<T>, data: U[]) {
-        let mapping = WrappedMappingData.getMappingData(wrappedMapping);
-        let serializedData = data.map(item => serializeData(mapping, item as T, this.options));
-        let query = this.knexInterface
-            .insert(serializedData)
-            .into(mapping.getTableName());
-
-        return new InsertQuery(this.knexClient, mapping, query, this.options);
+        return InsertQuery.batchInsertInto(this.knexClient, this.knexInterface, this.options, wrappedMapping, data);
     }
 
     deleteFrom<T>(wrappedMapping: Mapping<T>) {
@@ -524,11 +513,42 @@ export class DeleteQuery<UpdateDataType> extends WhereQuery implements PromiseLi
 export class InsertQuery<InsertDataType> extends BaseQuery implements PromiseLike<void> {
     constructor(
         knexClient: knex,
-        private mapping: BaseMappingData<InsertDataType>,
         knexQuery: knex.QueryBuilder,
+        private mapping: BaseMappingData<InsertDataType>,
         private serializationOptions: SerializationOptions
     ) {
         super(knexClient, knexQuery);
+    }
+
+    static insertInto<T, U extends T>(
+        knexClient: knex,
+        knexInterface: knex.QueryInterface,
+        options: SerializationOptions,
+        mapping: Mapping<T>,
+        data: U
+    ) {
+        let mappingData = WrappedMappingData.getMappingData(mapping);
+        let query = knexInterface
+            .insert(serializeData(mappingData, data as T, options))
+            .into(mappingData.getTableName());
+
+        return new InsertQuery(knexClient, query, mappingData, options);
+    }
+
+    static batchInsertInto<T, U extends T>(
+        knexClient: knex,
+        knexInterface: knex.QueryInterface,
+        options: SerializationOptions,
+        mapping: Mapping<T>,
+        data: U[]
+    ) {
+        let mappingData = WrappedMappingData.getMappingData(mapping);
+        let serializedData = data.map(item => serializeData(mappingData, item as T, options));
+        let query = knexInterface
+            .insert(serializedData)
+            .into(mappingData.getTableName());
+
+        return new InsertQuery(knexClient, query, mappingData, options);
     }
 
     returningAll() {
