@@ -21,6 +21,7 @@ import {
     BaseMappingData,
     defineMapping,
     Mapping,
+    OperandType,
     WrappedMappingData
 } from './mapping';
 
@@ -55,7 +56,11 @@ export class BaseMapper {
     }
 
     updateWith<T extends U, U>(mapping: Mapping<T>, data: U) {
-        return UpdateQuery.createFromUpdateWith(this.knexClient, this.knexInterface, this.options, mapping, data);
+        return UpdateQuery.updateWith(this.knexClient, this.knexInterface, this.options, mapping, data);
+    }
+
+    update<T>(mapping: Mapping<T>) {
+        return UpdateQuery.update(this.knexClient, this.knexInterface, this.options, mapping);
     }
 
     insertInto<T, U extends T>(mapping: Mapping<T>, data: U) {
@@ -469,12 +474,34 @@ export class UpdateQuery<T, U> extends WhereQuery implements PromiseLike<number>
         super(knexClient, knexQuery);
     }
 
-    static createFromUpdateWith<T extends U, U>(knexClient: knex, knexInterface: knex.QueryInterface, options: SerializationOptions, mapping: Mapping<T>, data: U) {
+    set<T extends ValueType>(attribute: T, expression: T) {
+        let attributeOperand: OperandType = attribute;
+        let expressionOperand: OperandType = expression;
+
+        if (attributeOperand instanceof AttributeDefinition && !(expressionOperand instanceof AttributeDefinition)) {
+            this.knexQuery.update(attributeOperand.getFieldName(), expressionOperand);
+        } else {
+            throw new Error("Invalid arguments.");
+        }
+
+        return this;
+    }
+
+    static updateWith<T extends U, U>(knexClient: knex, knexInterface: knex.QueryInterface, options: SerializationOptions, mapping: Mapping<T>, data: U) {
         let mappingData = WrappedMappingData.getMappingData(mapping);
         let tableName = mappingData.getTableName();
         let fieldData = serializeData(mappingData, data, options);
 
         let query = knexInterface.table(tableName).update(fieldData);
+
+        return new UpdateQuery(knexClient, query, options, mappingData);
+    }
+
+    static update<T>(knexClient: knex, knexInterface: knex.QueryInterface, options: SerializationOptions, mapping: Mapping<T>) {
+        let mappingData = WrappedMappingData.getMappingData(mapping);
+        let tableName = mappingData.getTableName();
+
+        let query = knexInterface.table(tableName);
 
         return new UpdateQuery(knexClient, query, options, mappingData);
     }

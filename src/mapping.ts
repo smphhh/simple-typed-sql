@@ -3,6 +3,7 @@ let md5 = require('md5');
 
 import {
     DataType,
+    ValueType,
     FieldDefinition,
     FieldDefinitionMap,
     Metadata
@@ -184,3 +185,5 @@ function wrapMappingData<T>(mappingData: BaseMappingData<T>) {
     
     return proxy as Mapping<T>;
 }
+
+export type OperandType = AttributeDefinition | ValueType;

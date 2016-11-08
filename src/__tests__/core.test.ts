@@ -343,6 +343,38 @@ describe("Simple typed SQL", function () {
         expect(data).to.deep.equal([Object.assign({}, testObject1, { externalId: 'updated' }), testObject2]);
     });
 
+    it("should support updating with the set operator", async function () {
+        await mapper.insertInto(testMapping1, testObject1);
+        await mapper.insertInto(testMapping1, testObject2);
+
+        await mapper
+            .update(testMapping1)
+            .set(testMapping1.externalId, "updated")
+            .whereEqual(testMapping1.externalId, testObject1.externalId);
+
+        let data = await mapper.selectAllFrom(testMapping1).orderBy(testMapping1.id, 'asc');
+
+        expect(data).to.deep.equal([Object.assign({}, testObject1, { externalId: 'updated' }), testObject2]);
+    });
+    
+
+    it("should support updating multiple fields with the set operator", async function () {
+        await mapper.insertInto(testMapping1, testObject1);
+        await mapper.insertInto(testMapping1, testObject2);
+
+        let count = await mapper
+            .update(testMapping1)
+            .set(testMapping1.externalId, "updated")
+            .set(testMapping1.id, 5)
+            .whereEqual(testMapping1.externalId, testObject1.externalId);
+
+        expect(count).to.equal(1);
+
+        let data = await mapper.selectAllFrom(testMapping1).orderBy(testMapping1.id, 'asc');
+
+        expect(data).to.deep.equal([testObject2, { id: 5, externalId: 'updated' }]);
+    });
+
     it("should return the number of affected rows from update clauses", async function () {
         await mapper.insertInto(testMapping1, testObject1);
         await mapper.insertInto(testMapping1, testObject2);
