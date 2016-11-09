@@ -166,24 +166,14 @@ export function defineMapping<T>(tableName: string, prototypeDefinition: T): Map
 function wrapMappingData<T>(mappingData: BaseMappingData<T>) {
     let wrapper = new WrappedMappingData(mappingData);
     
-    let proxy = new Proxy(wrapper, {
-        get: function (target, property) {
-            let mappingData = WrappedMappingData.getMappingData(target); 
-            if (property === '__mapping') {
-                return mappingData;
-            } else if (typeof property === 'string') {
-                return mappingData.getAttributeDefinition(property);
-            } else {
-                throw new Error(`Invalid attribute type: ${typeof property}`);
-            }
-        },
-
-        set: function (target, property, value): boolean {
-            throw new Error("Modifying the properties of a Mapping object is not allowed.");
-        }
-    });
+    for (let prop of mappingData.getAttributes()) {
+        Object.defineProperty(wrapper, prop, {
+            enumerable: true,
+            get: () => mappingData.getAttributeDefinition(prop)
+        });
+    }
     
-    return proxy as Mapping<T>;
+    return wrapper as Mapping<T>;
 }
 
 export type OperandType = AttributeDefinition | ValueType;
