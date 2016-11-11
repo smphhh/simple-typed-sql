@@ -46,6 +46,20 @@ describe("Simple typed SQL utils", function () {
 
         expect(await query).to.deep.equal([Objects.orderDetail1]);
     });
+
+    it("should support selecting all fields of a mapping with a util function", async function () {
+        await mapper.insertInto(Mappings.order, Objects.order1);
+        await mapper.insertInto(Mappings.orderDetail, Objects.orderDetail1);
+
+        let query = mapper
+            .from(Mappings.order)
+            .innerJoinEqual(Mappings.orderDetail, Mappings.order.id, Mappings.orderDetail.orderId)
+            .select(Object.assign({ orderTime: Mappings.order.orderTime }, Utils.selectAll(Mappings.orderDetail)));
+
+        console.log(query.toString());
+
+        expect(await query.getOne()).to.deep.equal(Object.assign({ orderTime: Objects.order1.orderTime }, Objects.orderDetail1));
+    });
 });
 
 

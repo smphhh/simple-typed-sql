@@ -32,6 +32,11 @@ export namespace Utils {
             );
         }
     }
+
+    export function selectAll<T>(mapping: Mapping<T>): T {
+        let mappingData = WrappedMappingData.getMappingData(mapping);
+        return mappingData.getAttributeDefinitionMap() as any;
+    }
 }
 
 function bindOperand<T>(operand: ComparisonOperandType, mappingData: BaseMappingData<T>, instance: T): ComparisonOperandType {
