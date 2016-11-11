@@ -56,8 +56,6 @@ describe("Simple typed SQL utils", function () {
             .innerJoinEqual(Mappings.orderDetail, Mappings.order.id, Mappings.orderDetail.orderId)
             .select(Object.assign({ orderTime: Mappings.order.orderTime }, Utils.selectAll(Mappings.orderDetail)));
 
-        console.log(query.toString());
-
         expect(await query.getOne()).to.deep.equal(Object.assign({ orderTime: Objects.order1.orderTime }, Objects.orderDetail1));
     });
 });
