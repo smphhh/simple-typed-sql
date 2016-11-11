@@ -1,12 +1,11 @@
 {
   "name": "simple-typed-sql",
-  "version": "0.8.2",
-  "description": "Simple SQL library for Typescript",
+  "version": "0.8.3",
+  "description": "SQL query builder for Typescript",
   "license": "MIT",
   "keywords": [
     "typescript",
     "sql",
-    "orm",
     "node"
   ],
   "repository": {
