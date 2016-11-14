@@ -47,6 +47,49 @@ describe("Simple typed SQL utils", function () {
         expect(await query).to.deep.equal([Objects.orderDetail1]);
     });
 
+    it("should throw when trying to bind condition attributes to null or undefined values", async function () {
+        await mapper.insertInto(Mappings.order, Objects.order1);
+        await mapper.insertInto(Mappings.orderDetail, Objects.orderDetail1);
+
+        let order = await mapper.selectAllFrom(Mappings.order).getOne();
+
+        let joinCondition = equal(Mappings.orderDetail.orderId, Mappings.order.id);
+        
+        expect(() => Utils.bindConditionAttributes(
+            joinCondition,
+            Mappings.order,
+            Object.assign({}, order, { id: null })
+        )).to.throw(Error);
+
+        expect(() => Utils.bindConditionAttributes(
+            joinCondition,
+            Mappings.order,
+            Object.assign({}, order, { id: undefined })
+        )).to.throw(Error);
+    });
+
+    it("should support catching null attribute values in condition bindings", async function () {
+        await mapper.insertInto(Mappings.order, Objects.order1);
+        await mapper.insertInto(Mappings.orderDetail, Objects.orderDetail1);
+
+        let order = await mapper.selectAllFrom(Mappings.order).getOne();
+
+        let joinCondition = equal(Mappings.orderDetail.orderId, Mappings.order.id);
+        
+        expect(Utils.bindConditionAttributes(
+            joinCondition,
+            Mappings.order,
+            Object.assign({}, order, { id: null }),
+            true
+        )).to.be.null;
+
+        expect(() => Utils.bindConditionAttributes(
+            joinCondition,
+            Mappings.order,
+            Object.assign({}, order, { id: undefined })
+        )).to.throw(Error);
+    });
+
     it("should support selecting all fields of a mapping with a util function", async function () {
         await mapper.insertInto(Mappings.order, Objects.order1);
         await mapper.insertInto(Mappings.orderDetail, Objects.orderDetail1);

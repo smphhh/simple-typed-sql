@@ -5,7 +5,7 @@ import {
     ComparisonClause,
     ComparisonOperandType
 } from './condition';
-
+import { CustomError } from './definition';
 import {
     AttributeDefinition,
     BaseMappingData,
@@ -15,24 +15,43 @@ import {
 
 export namespace Utils {
 
-    export function bindConditionAttributes<T>(conditionClause: ConditionClause, mapping: Mapping<T>, instance: T): ConditionClause {
-        if (conditionClause instanceof LogicalClause) {
-            return new LogicalClause(
-                conditionClause.operator,
-                conditionClause.operands.map(operand => bindConditionAttributes(operand, mapping, instance))
-            );
+    /**
+     * Bind the attributes in a condition clause to actual values defined by an instance of the mappings apparent type.
+     */
+    export function bindConditionAttributes<T>(
+        conditionClause: ConditionClause,
+        mapping: Mapping<T>,
+        instance: T,
+        catchNullBinds = false
+    ): ConditionClause {
+        try {
+            if (conditionClause instanceof LogicalClause) {
+                return new LogicalClause(
+                    conditionClause.operator,
+                    conditionClause.operands.map(operand => bindConditionAttributes(operand, mapping, instance))
+                );
 
-        } else if (conditionClause instanceof ComparisonClause) {
-            let mappingData = WrappedMappingData.getMappingData(mapping);
+            } else if (conditionClause instanceof ComparisonClause) {
+                let mappingData = WrappedMappingData.getMappingData(mapping);
 
-            return new ComparisonClause(
-                conditionClause.operator,
-                bindOperand(conditionClause.operand1, mappingData, instance),
-                bindOperand(conditionClause.operand2, mappingData, instance)
-            );
+                return new ComparisonClause(
+                    conditionClause.operator,
+                    bindOperand(conditionClause.operand1, mappingData, instance),
+                    bindOperand(conditionClause.operand2, mappingData, instance)
+                );
+            }
+        } catch (error) {
+            if (error instanceof NullBindError && catchNullBinds) {
+                return null;
+            } else {
+                throw error;
+            }
         }
     }
 
+    /**
+     * Return a select definition selecting all attributes of a Mapping.
+     */
     export function selectAll<T>(mapping: Mapping<T>): T {
         let mappingData = WrappedMappingData.getMappingData(mapping);
         return mappingData.getAttributeDefinitionMap() as any;
@@ -42,8 +61,10 @@ export namespace Utils {
 function bindOperand<T>(operand: ComparisonOperandType, mappingData: BaseMappingData<T>, instance: T): ComparisonOperandType {
     if (operand instanceof AttributeDefinition && operand.getTableName() === mappingData.getTableName()) {
         let value = instance[operand.getAttributeName()];
-        if (value === null || value === undefined) {
-            throw new Error("Binding instance missing required attribute");
+        if (value === null) {
+            throw new NullBindError("Binding instance attribute value may not be null.");
+        } else if (value === undefined) {
+            throw new Error("Binding instance attribute value may not be undefined.");
         }
 
         return value;
@@ -52,3 +73,6 @@ function bindOperand<T>(operand: ComparisonOperandType, mappingData: BaseMapping
         return operand;
     }
 }
+
+class NullBindError extends CustomError {}
+
