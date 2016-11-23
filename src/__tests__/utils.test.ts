@@ -7,6 +7,7 @@ import { createConfig } from '../config';
 
 import {
     Utils,
+    and,
     equal,
     Mapper
 } from '../';
@@ -74,7 +75,7 @@ describe("Simple typed SQL utils", function () {
 
         let order = await mapper.selectAllFrom(Mappings.order).getOne();
 
-        let joinCondition = equal(Mappings.orderDetail.orderId, Mappings.order.id);
+        let joinCondition = and(equal(Mappings.orderDetail.orderId, Mappings.order.id), equal(1, 1));
         
         expect(Utils.bindConditionAttributes(
             joinCondition,
