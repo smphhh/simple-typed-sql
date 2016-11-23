@@ -66,7 +66,7 @@ export class BaseMappingData<T> {
         let fieldDefinition = this.__metadata.attributes[name];
         if (fieldDefinition) {
             return new AttributeDefinition(
-                wrapMappingData(this),
+                (this as any) as Mapping<{}>,
                 fieldDefinition.dataType,
                 name,
                 fieldDefinition.fieldName
@@ -137,12 +137,12 @@ export interface AttributeDefinitionMap {
 
 export class WrappedMappingData<T> {
     constructor(
-        protected __mapping: BaseMappingData<T>
+        protected __mappingData: BaseMappingData<T>
     ) {
     }
 
     static getMappingData<T>(wrapper: WrappedMappingData<T>) {
-        return wrapper.__mapping;
+        return (wrapper as any) as BaseMappingData<T>;
     }
 }
 
@@ -164,7 +164,7 @@ export function defineMapping<T>(tableName: string, prototypeDefinition: T): Map
 }
 
 function wrapMappingData<T>(mappingData: BaseMappingData<T>) {
-    let wrapper = new WrappedMappingData(mappingData);
+    let wrapper = Object.create(mappingData, {});
     
     for (let prop of mappingData.getAttributes()) {
         Object.defineProperty(wrapper, prop, {
