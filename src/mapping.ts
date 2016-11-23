@@ -169,7 +169,7 @@ function wrapMappingData<T>(mappingData: BaseMappingData<T>) {
     for (let prop of mappingData.getAttributes()) {
         Object.defineProperty(wrapper, prop, {
             enumerable: true,
-            get: () => mappingData.getAttributeDefinition(prop)
+            get: () => wrapper.getAttributeDefinition(prop)
         });
     }
     

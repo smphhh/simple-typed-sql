@@ -8,6 +8,7 @@ import {
     defineString,
     WrappedMappingData
 } from '../';
+import { AttributeDefinition } from '../mapping';
 
 chai.use(chaiAsPromised);
 
@@ -38,7 +39,9 @@ describe("Simple typed SQL mapping", function () {
 
         let mappingData = WrappedMappingData.getMappingData(mapping);
         let fooAttributeDefinition = mappingData.getAttributeDefinition('foo');
+        let fooAttributeDefinition2: AttributeDefinition = mapping.foo as any;
         expect(fooAttributeDefinition.mapping).to.equal(mapping);
+        expect(fooAttributeDefinition2.mapping).to.equal(mapping);
     });
 
     it("should error on property set attempt", async function () {
