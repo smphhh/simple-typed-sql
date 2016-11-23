@@ -1,6 +1,6 @@
 {
   "name": "simple-typed-sql",
-  "version": "0.8.4",
+  "version": "0.8.5",
   "description": "SQL query builder for Typescript",
   "license": "MIT",
   "keywords": [
