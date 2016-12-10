@@ -33,6 +33,8 @@ export {
 } from './condition';
 
 export {
+    Attribute,
+    BaseAttribute,
     defineMapping,
     defineMappingAndInstanceStub,
     getInstanceStub,
