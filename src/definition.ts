@@ -9,34 +9,44 @@ export interface Metadata {
     fields: FieldDefinitionMap;
 }
 
-export function defineBoolean(options?: AttributeOptions) {
-    let definition: any = options || {};
-    definition._type = 'boolean';
-    return definition as boolean;
+export function defineBoolean(options?: AttributeOptions): AttributeDefinitionData<boolean> {
+    return {
+        ...options,
+        __value: null as boolean,
+        __type: 'boolean'
+    };
 }
 
-export function defineString(options?: AttributeOptions) {
-    let definition: any = options || {};
-    definition._type = 'string';
-    return definition as string;
+export function defineString(options?: AttributeOptions): AttributeDefinitionData<string> {
+    return {
+        ...options,
+        __value: null as string,
+        __type: 'string'
+    };
 }
 
-export function defineNumber(options?: AttributeOptions) {
-    let definition: any = options || {};
-    definition._type = 'number';
-    return definition as number;
+export function defineNumber(options?: AttributeOptions): AttributeDefinitionData<number> {
+    return {
+        ...options,
+        __value: null as number,
+        __type: 'number'
+    };
 }
 
-export function defineJson<Subtype>(options?: AttributeOptions) {
-    let definition: any = options || {};
-    definition._type = 'json';
-    return definition as Subtype;
+export function defineJson<Subtype>(options?: AttributeOptions): AttributeDefinitionData<Subtype> {
+    return {
+        ...options,
+        __value: null as Subtype,
+        __type: 'json'
+    };
 }
 
-export function defineDatetime(options?: AttributeOptions) {
-    let definition: any = options || {};
-    definition._type = 'datetime';
-    return definition as Date;
+export function defineDatetime(options?: AttributeOptions): AttributeDefinitionData<Date> {
+    return {
+        ...options,
+        __value: null as Date,
+        __type: 'datetime'
+    };
 }
 
 export type DataMapperOptions = SerializationOptions;
@@ -45,13 +55,18 @@ export interface AttributeOptions {
     fieldName?: string
 }
 
-export type DataType = 'number' | 'string' | 'json' | 'datetime';
+export type AttributeTypeName = 'number' | 'string' | 'json' | 'datetime' | 'boolean';
 
+export interface AttributeDefinitionData<T> extends AttributeOptions {
+    fieldName?: string;
+    __value: T;
+    __type: AttributeTypeName;
+}
 
 export type ValueType = string | number | boolean | Date;
 
 export interface FieldDefinition {
-    dataType: DataType;
+    dataType: AttributeTypeName;
     fieldName: string;
 }
 

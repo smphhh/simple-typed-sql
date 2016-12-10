@@ -165,8 +165,10 @@ describe("Simple typed SQL expressions", function () {
         let query = mapper
             .from(testMapping1)
             .select({ max: max(testMapping1.id) });
+        
+        const data = await query;
 
-        expect(await query).to.deep.equal([{ max: Math.max(testObject1.id, testObject2.id) }]);
+        expect(data).to.deep.equal([{ max: Math.max(testObject1.id, testObject2.id) }]);
     });
 
     it("should support min aggregation function", async function () {

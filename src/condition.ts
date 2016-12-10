@@ -2,8 +2,9 @@
 import * as knex from 'knex';
 
 import {
-    AttributeDefinition,
-    BaseMappingData
+    BaseAttribute,
+    BaseMappingData,
+    Attribute
 } from './mapping';
 
 export type ComparisonOperator = '<' | '>' | '<=' | '>=' | '=' | '!=';
@@ -47,7 +48,7 @@ export class LogicalClause extends ConditionClause {
 }
 
 export type ComparisonValueType = string | number | boolean | Date;
-export type ComparisonOperandType = AttributeDefinition | ComparisonValueType;
+export type ComparisonOperandType = BaseAttribute | ComparisonValueType;
 
 export class ComparisonClause extends ConditionClause {
     constructor(
@@ -81,7 +82,7 @@ export class ComparisonClause extends ConditionClause {
     }
 
     private static makeRawExpression(knexClient: knex, operand: ComparisonOperandType) {
-        if (operand instanceof AttributeDefinition) {
+        if (operand instanceof BaseAttribute) {
             return knexClient.raw('??', operand.getAbsoluteFieldName());
         } else {
             return knexClient.raw('?', operand);
@@ -97,10 +98,17 @@ export function or(...conditions: ConditionClause[]) {
     return new LogicalClause("or", conditions);
 }
 
-export function comparison<T extends ComparisonValueType>(operand1: T, operator: ComparisonOperator, operand2: T) {
+export function comparison<T extends ComparisonValueType>(
+    operand1: T | Attribute<T>,
+    operator: ComparisonOperator,
+    operand2: T | Attribute<T>
+) {
     return new ComparisonClause(operator, operand1, operand2);
 }
 
-export function equal<T extends ComparisonValueType>(operand1: T, operand2: T) {
+export function equal<T extends ComparisonValueType>(
+    operand1: T | Attribute<T>,
+    operand2: T | Attribute<T>
+) {
     return comparison(operand1, '=', operand2);
 }

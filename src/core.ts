@@ -7,21 +7,26 @@ import {
 } from './definition';
 
 import {
+    comparison,
     ComparisonOperator,
+    ComparisonValueType,
     ConditionClause
 } from './condition';
 
 import {
+    BaseAggregationExpression,
     AggregationExpression
 } from './expression';
 
 import {
-    AttributeDefinition,
+    BaseAttribute,
     AttributeDefinitionMap,
     BaseMappingData,
     defineMapping,
     Mapping,
     OperandType,
+    Attribute,
+    AttributeMap,
     WrappedMappingData
 } from './mapping';
 
@@ -46,7 +51,7 @@ export class BaseMapper {
         let mappingData = WrappedMappingData.getMappingData(mapping);
 
         let alias = "value";
-        let aggregationExpression = new AggregationExpression("count");
+        let aggregationExpression = new BaseAggregationExpression("count");
         let fieldMap: AttributeDefinitionMap = { value: aggregationExpression.getAttributeDefinition(alias) };
         let knexQuery = this.knexInterface
             .select(aggregationExpression.buildAggregationClause(this.knexClient, alias))
@@ -163,6 +168,13 @@ export class BaseQuery {
 
 export type JoinType = "innerJoin" | "leftOuterJoin" | "rightOuterJoin";
 
+export type SelectDefinition<T> = Attribute<T> | AggregationExpression<T>;  
+export type BaseSelectDefinitionMap = { [key: string]: SelectDefinition<any>; };
+export type SelectDefinitionMap<T> = {
+    [P in keyof T]: SelectDefinition<T[P]>;
+}
+export type SelectExpression<T> = SelectDefinitionMap<T> & BaseSelectDefinitionMap;
+
 export class FromQuery<SourceType> extends BaseQuery {
     private mappings: Map<string, BaseMappingData<any>>;
 
@@ -202,7 +214,7 @@ export class FromQuery<SourceType> extends BaseQuery {
         return this.simpleJoin("rightOuterJoin", joinMapping, field1, field2);
     }
 
-    select<T>(selectInput: T) {
+    select<T>(selectInput: SelectExpression<T>) {
         return SelectQuery.createFromSelect(
             this.knexClient,
             this.knexQuery,
@@ -225,8 +237,8 @@ export class FromQuery<SourceType> extends BaseQuery {
 
     private simpleJoin<T, U>(joinType: JoinType, wrappedJoinMapping: Mapping<U>, field1: T, field2: T) {
         let joinMapping = WrappedMappingData.getMappingData(wrappedJoinMapping);
-        let attribute1: AttributeDefinition = field1 as any;
-        let attribute2: AttributeDefinition = field2 as any;
+        let attribute1: BaseAttribute = field1 as any;
+        let attribute2: BaseAttribute = field2 as any;
         let joinTableName = joinMapping.getTableName();
         if (this.mappings.has(joinTableName)) {
             throw new Error(`Invalid join. The same table (${joinTableName}) can be referred to in one from-clause only in SimpleFromQuery.`);
@@ -251,7 +263,7 @@ export class FromQuery<SourceType> extends BaseQuery {
 
         this.knexQuery = this.knexQuery[joinType](
             joinMapping.getTableName(),
-            conditionClause.buildJoinConditionClause(this.knexClient)
+            conditionClause.buildJoinConditionClause(this.knexClient) as any
         );
 
         return this;
@@ -271,34 +283,28 @@ export class WhereQuery extends BaseQuery {
         return this;
     }
 
-    whereEqual<T>(attribute: T, value: T) {
-        return this.whereOperator(attribute, '=', value);
+    whereEqual<T extends ComparisonValueType>(operand1: T | Attribute<T>, operand2: T | Attribute<T>) {
+        return this.where(comparison(operand1, '=', operand2));
     }
 
-    whereLess<T>(attribute: T, value: T) {
-        return this.whereOperator(attribute, '<', value);
+    whereLess<T extends ComparisonValueType>(operand1: T | Attribute<T>, operand2: T | Attribute<T>) {
+        return this.where(comparison(operand1, '<', operand2));
     }
 
-    whereLessOrEqual<T>(attribute: T, value: T) {
-        return this.whereOperator(attribute, '<=', value);
+    whereLessOrEqual<T extends ComparisonValueType>(operand1: T | Attribute<T>, operand2: T | Attribute<T>) {
+        return this.where(comparison(operand1, '<=', operand2));
     }
 
-    whereGreater<T>(attribute: T, value: T) {
-        return this.whereOperator(attribute, '>', value);
+    whereGreater<T extends ComparisonValueType>(operand1: T | Attribute<T>, operand2: T | Attribute<T>) {
+        return this.where(comparison(operand1, '>', operand2));
     }
 
-    whereGreaterOrEqual<T>(attribute: T, value: T) {
-        return this.whereOperator(attribute, '>=', value);
-    }
-
-    private whereOperator<T>(attribute: T, operator: ComparisonOperator, value: T) {
-        let attributeDefinition: AttributeDefinition = attribute as any;
-        this.knexQuery = this.knexQuery.andWhere(attributeDefinition.getAbsoluteFieldName(), operator, value as any);
-        return this;
+    whereGreaterOrEqual<T extends ComparisonValueType>(operand1: T | Attribute<T>, operand2: T | Attribute<T>) {
+        return this.where(comparison(operand1, '>=', operand2));
     }
 }
 
-export interface SelectDefinition {
+export interface SelectQueryDefinition {
     [key: string]: string | knex.Raw;
 }
 
@@ -315,17 +321,17 @@ export class SelectQuery<ResultType> extends WhereQuery {
 
     private static parseSelectInput<T>(knexClient: knex, mappings: Map<string, BaseMappingData<any>>, input: T) {
         return Object.keys(input).reduce((attributeData, key) => {
-            let expression: AttributeDefinition | AggregationExpression = input[key];
+            let expression: BaseAttribute | BaseAggregationExpression = input[key];
 
-            if (expression instanceof AttributeDefinition) {
-                let attributeDefinition: AttributeDefinition = input[key];
+            if (expression instanceof BaseAttribute) {
+                let attributeDefinition: BaseAttribute = input[key];
                 let attributeMappingData = WrappedMappingData.getMappingData(attributeDefinition.mapping);
                 let tableName = attributeMappingData.getTableName();
                 if (!mappings.has(tableName)) {
                     throw new Error(`Invalid select expression for attribute "${key}": the table ${tableName} is missing a from-clause entry.`);
                 }
 
-                let newAttributeDefinition = new AttributeDefinition(
+                let newAttributeDefinition = new BaseAttribute(
                     attributeDefinition.mapping,
                     attributeDefinition.dataType,
                     key,
@@ -337,14 +343,14 @@ export class SelectQuery<ResultType> extends WhereQuery {
 
                 //return BaseMappingData.getAliasedAttributeName(newAttributeDefinition);
 
-            } else if (expression instanceof AggregationExpression) {
+            } else if (expression instanceof BaseAggregationExpression) {
                 attributeData.fieldMap[key] = expression.getAttributeDefinition(key);
                 attributeData.selectDefinition[key] = expression.buildAggregationClause(knexClient, key);
             }
 
             return attributeData;
 
-        }, { fieldMap: {} as AttributeDefinitionMap, selectDefinition: {} as SelectDefinition });
+        }, { fieldMap: {} as AttributeDefinitionMap, selectDefinition: {} as SelectQueryDefinition });
     }
 
     static createFromSelect<T>(
@@ -352,7 +358,7 @@ export class SelectQuery<ResultType> extends WhereQuery {
         knexQuery: knex.QueryBuilder,
         mappings: Map<string, BaseMappingData<any>>,
         serializationOptions: SerializationOptions,
-        selectInput: T
+        selectInput: SelectDefinitionMap<T>
     ) {
         let attributeData = SelectQuery.parseSelectInput(knexClient, mappings, selectInput);
         let query = knexQuery.select(Object.keys(attributeData.selectDefinition).map(item => attributeData.selectDefinition[item]));
@@ -380,12 +386,12 @@ export class SelectQuery<ResultType> extends WhereQuery {
         return this;
     }
 
-    orderBy(attribute: AttributeDefinition | AggregationExpression | ValueType, direction: 'asc' | 'desc') {
-        if (attribute instanceof AttributeDefinition) {
+    orderBy(attribute: BaseAttribute | BaseAggregationExpression | ValueType, direction: 'asc' | 'desc') {
+        if (attribute instanceof BaseAttribute) {
             this.knexQuery.orderBy(attribute.getAbsoluteFieldName(), direction);
             return this;
 
-        } else if (attribute instanceof AggregationExpression) {
+        } else if (attribute instanceof BaseAggregationExpression) {
             this.knexQuery.orderBy(attribute.buildAggregationClause(this.knexClient) as any, direction);
             return this;
 
@@ -394,9 +400,9 @@ export class SelectQuery<ResultType> extends WhereQuery {
         }
     }
 
-    groupBy(...attributes: (AttributeDefinition | ValueType)[]) {
+    groupBy(...attributes: (BaseAttribute | ValueType)[]) {
         let fieldNames = attributes.map(item => {
-            if (item instanceof AttributeDefinition) {
+            if (item instanceof BaseAttribute) {
                 return item.getAbsoluteFieldName();
             } else {
                 throw new Error(`Invalid group by attribute: ${item}`);
@@ -474,11 +480,11 @@ export class UpdateQuery<T, U> extends WhereQuery implements PromiseLike<number>
         super(knexClient, knexQuery);
     }
 
-    set<T extends ValueType>(attribute: T, expression: T) {
+    set<T extends ValueType>(attribute: T | Attribute<T>, expression: T) {
         let attributeOperand: OperandType = attribute;
         let expressionOperand: OperandType = expression;
 
-        if (attributeOperand instanceof AttributeDefinition && !(expressionOperand instanceof AttributeDefinition)) {
+        if (attributeOperand instanceof BaseAttribute && !(expressionOperand instanceof BaseAttribute)) {
             this.knexQuery.update(attributeOperand.getFieldName(), expressionOperand);
         } else {
             throw new Error("Invalid arguments.");

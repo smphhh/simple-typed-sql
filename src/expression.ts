@@ -2,28 +2,29 @@
 import * as knex from 'knex';
 
 import {
-    DataType,
+    AttributeTypeName,
     ValueType
 } from './definition';
 
 import {
-    AttributeDefinition,
+    BaseAttribute,
     BaseMappingData,
-    Mapping
+    Mapping,
+    Attribute
 } from './mapping';
 
 export type AggregationFunction = 'sum' | 'avg' | 'count' | 'countDistinct' | 'max' | 'min';
 
-export type AggregationOperandType = AttributeDefinition | ValueType;
+export type AggregationOperandType = BaseAttribute | ValueType;
 
-export class AggregationExpression {
-    private operandAttribute: AttributeDefinition;
+export class BaseAggregationExpression {
+    private operandAttribute: BaseAttribute;
 
     constructor(
         private aggregationFunction: AggregationFunction,
-        operand?: AttributeDefinition | ValueType
+        operand?: BaseAttribute | ValueType
     ) {
-        if (operand instanceof AttributeDefinition) {
+        if (operand instanceof BaseAttribute) {
             this.operandAttribute = operand;
         } else if (operand === undefined) {
 
@@ -61,7 +62,7 @@ export class AggregationExpression {
 
     getAttributeDefinition(alias: string) {
         let mapping: Mapping<{}>;
-        let dataType: DataType;
+        let dataType: AttributeTypeName;
 
         if (this.operandAttribute !== undefined) {
             dataType = this.operandAttribute.dataType;
@@ -74,30 +75,41 @@ export class AggregationExpression {
             dataType = "number";
         }
  
-        return new AttributeDefinition(mapping, dataType, attributeName, undefined);
+        return new BaseAttribute(mapping, dataType, attributeName, undefined);
     }
 }
 
-export function sum<T extends ValueType>(operand: T): T {
-    return new AggregationExpression("sum", operand) as any;
+export class AggregationExpression<T> extends BaseAggregationExpression {
+    protected __value: T;
+
+    constructor(
+        aggregationFunction: AggregationFunction,
+        operand?: BaseAttribute | ValueType
+    ) {
+        super(aggregationFunction, operand);
+    }
 }
 
-export function avg<T extends ValueType>(operand: T): T {
-    return new AggregationExpression("avg", operand) as any;
+export function sum<T extends ValueType>(operand: Attribute<T>) {
+    return new AggregationExpression<T>("sum", operand);
 }
 
-export function max<T extends ValueType>(operand: T): T {
-    return new AggregationExpression("max", operand) as any;
+export function avg<T extends ValueType>(operand: Attribute<T>) {
+    return new AggregationExpression<T>("avg", operand);
 }
 
-export function min<T extends ValueType>(operand: T): T {
-    return new AggregationExpression("avg", operand) as any;
+export function max<T extends ValueType>(operand: Attribute<T>) {
+    return new AggregationExpression<T>("max", operand);
 }
 
-export function count(operand?: AggregationOperandType): number {
-    return new AggregationExpression("count", operand) as any;
+export function min<T extends ValueType>(operand: Attribute<T>) {
+    return new AggregationExpression<T>("avg", operand);
 }
 
-export function countDistinct(operand?: AggregationOperandType): number {
-    return new AggregationExpression("countDistinct", operand) as any;
+export function count(operand?: AggregationOperandType) {
+    return new AggregationExpression<number>("count", operand);
+}
+
+export function countDistinct(operand?: AggregationOperandType) {
+    return new AggregationExpression<number>("countDistinct", operand);
 }

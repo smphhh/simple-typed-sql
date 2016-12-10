@@ -7,7 +7,7 @@ import {
 } from './condition';
 import { CustomError } from './definition';
 import {
-    AttributeDefinition,
+    BaseAttribute,
     BaseMappingData,
     Mapping,
     WrappedMappingData
@@ -59,7 +59,7 @@ export namespace Utils {
 }
 
 function bindOperand<T>(operand: ComparisonOperandType, mappingData: BaseMappingData<T>, instance: T): ComparisonOperandType {
-    if (operand instanceof AttributeDefinition && operand.getTableName() === mappingData.getTableName()) {
+    if (operand instanceof BaseAttribute && operand.getTableName() === mappingData.getTableName()) {
         let value = instance[operand.getAttributeName()];
         if (value === null) {
             throw new NullBindError("Binding instance attribute value may not be null.");

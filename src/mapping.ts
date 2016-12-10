@@ -2,7 +2,8 @@
 let md5 = require('md5');
 
 import {
-    DataType,
+    AttributeDefinitionData,
+    AttributeTypeName,
     ValueType,
     FieldDefinition,
     FieldDefinitionMap,
@@ -15,7 +16,7 @@ export class BaseMappingData<T> {
 
     constructor(
         tableName: string,
-        prototypeDefinition: T
+        prototypeDefinition: MappingDefinition<T> & Record<string, AttributeDefinitionData<any>>
     ) {
         let metadata: Metadata = {
             tableName: tableName,
@@ -27,7 +28,7 @@ export class BaseMappingData<T> {
 
         for (let attributeName of attributeNames) {
             let fieldDefinition = {
-                dataType: prototypeDefinition[attributeName]._type,
+                dataType: prototypeDefinition[attributeName].__type,
                 fieldName: prototypeDefinition[attributeName].fieldName || attributeName
             };
 
@@ -62,10 +63,10 @@ export class BaseMappingData<T> {
         return this.getAttributes().map(key => this.getAttributeDefinition(key));
     }
 
-    getAttributeDefinition(name: string): AttributeDefinition {
+    getAttributeDefinition(name: string): BaseAttribute {
         let fieldDefinition = this.__metadata.attributes[name];
         if (fieldDefinition) {
-            return new AttributeDefinition(
+            return new BaseAttribute(
                 (this as any) as Mapping<{}>,
                 fieldDefinition.dataType,
                 name,
@@ -100,10 +101,10 @@ export class BaseMappingData<T> {
     }
 }
 
-export class AttributeDefinition {
+export class BaseAttribute {
     constructor(
         public mapping: Mapping<{}>,
-        public dataType: DataType,
+        public dataType: AttributeTypeName,
         public attributeName: string,
         public fieldName: string
     ) {}
@@ -131,16 +132,24 @@ export class AttributeDefinition {
     }
 }
 
+export class Attribute<T> extends BaseAttribute {
+    protected __value: T;
+
+    constructor(
+        mapping: Mapping<{}>,
+        dataType: AttributeTypeName,
+        attributeName: string,
+        fieldName: string
+    ) {
+        super(mapping, dataType, attributeName, fieldName);
+    }
+}
+
 export interface AttributeDefinitionMap {
-    [key: string]: AttributeDefinition;
+    [key: string]: BaseAttribute;
 }
 
 export class WrappedMappingData<T> {
-    constructor(
-        protected __mappingData: BaseMappingData<T>
-    ) {
-    }
-
     static getMappingData<T>(wrapper: WrappedMappingData<T>) {
         return (wrapper as any) as BaseMappingData<T>;
     }
@@ -150,16 +159,24 @@ export function getInstanceStub<T>(mapping: Mapping<T>) {
     return WrappedMappingData.getMappingData(mapping).getInstanceStub();
 }
 
+export type AttributeMap<T> = {
+    readonly [P in keyof T]: Attribute<T[P]>
+}
+
 /**
  * A type representing a mapping between an SQL table and a JavaScript/Typescript object.
  */
-export type Mapping<T> = WrappedMappingData<T> & T;
+export type Mapping<T> = WrappedMappingData<T> & AttributeMap<T>;
+export type BaseMappingDefinition = Record<string, AttributeDefinitionData<any>>;
+export type MappingDefinition<T> = {
+    [P in keyof T]: AttributeDefinitionData<T[P]>;
+}
 
 /**
  * Create a Mapping given a table name and a definition object.
  */
-export function defineMapping<T>(tableName: string, prototypeDefinition: T): Mapping<T> {
-    let mappingData = new BaseMappingData(tableName, prototypeDefinition);
+export function defineMapping<T>(tableName: string, prototypeDefinition: MappingDefinition<T> & BaseMappingDefinition): Mapping<T> {
+    let mappingData = new BaseMappingData<T>(tableName, prototypeDefinition);
     return wrapMappingData(mappingData);
 }
 
@@ -176,4 +193,4 @@ function wrapMappingData<T>(mappingData: BaseMappingData<T>) {
     return wrapper as Mapping<T>;
 }
 
-export type OperandType = AttributeDefinition | ValueType;
+export type OperandType = BaseAttribute | ValueType;
