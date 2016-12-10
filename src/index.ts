@@ -34,7 +34,7 @@ export {
 
 export {
     defineMapping,
-    defineMapping as defineModel,
+    defineMappingAndInstanceStub,
     getInstanceStub,
     Mapping,
     WrappedMappingData,

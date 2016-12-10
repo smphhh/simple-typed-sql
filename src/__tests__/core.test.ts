@@ -10,6 +10,7 @@ import {
     defineDatetime,
     defineJson,
     defineMapping,
+    defineMappingAndInstanceStub,
     defineNumber,
     defineString,
     Mapper,
@@ -34,7 +35,7 @@ describe("Typed SQL", function () {
         }
     );
 
-    let testMapping2 = defineMapping(
+    let [testMapping2, testObject2Stub] = defineMappingAndInstanceStub(
         'test_model_2',
         {
             id: defineNumber(),

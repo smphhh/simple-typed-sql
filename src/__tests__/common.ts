@@ -6,6 +6,7 @@ import {
     defineDatetime,
     defineJson,
     defineMapping,
+    defineMappingAndInstanceStub,
     defineNumber,
     defineString,
     Mapping,

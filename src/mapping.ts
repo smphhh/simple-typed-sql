@@ -175,9 +175,20 @@ export type MappingDefinition<T> = {
 /**
  * Create a Mapping given a table name and a definition object.
  */
-export function defineMapping<T>(tableName: string, prototypeDefinition: MappingDefinition<T> & BaseMappingDefinition): Mapping<T> {
-    let mappingData = new BaseMappingData<T>(tableName, prototypeDefinition);
+export function defineMapping<T>(
+    tableName: string,
+    mappingDefinition: MappingDefinition<T> & BaseMappingDefinition
+): Mapping<T> {
+    let mappingData = new BaseMappingData<T>(tableName, mappingDefinition);
     return wrapMappingData(mappingData);
+}
+
+export function defineMappingAndInstanceStub<T>(
+    tableName: string,
+    mappingDefinition: MappingDefinition<T> & BaseMappingDefinition
+): [Mapping<T>, T] {
+    let mapping = defineMapping<T>(tableName, mappingDefinition);
+    return [mapping, getInstanceStub(mapping)];
 }
 
 function wrapMappingData<T>(mappingData: BaseMappingData<T>) {
