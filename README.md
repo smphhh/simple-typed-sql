@@ -1,7 +1,7 @@
-# Simple Typed SQL
+# Typed SQL
 
-JavaScript/TypeScript SQL query builder allowing one to write complex SQL queries without needing use
-strings to refer to columns or tables. Provides partial type safety and attribute auto-completion when
+SQL query builder for TypeScript. Write complex SQL queries without needing use
+strings to refer to column or table names. Provides partial type safety and attribute auto-completion when
 used with TypeScript. Powered by Knex.js.
 
 Supports:
@@ -17,7 +17,7 @@ Upcoming:
 ## Installation
 
 ```
-npm install simple-typed-sql
+npm install typed-sql
 ```
 
 ## Config
@@ -28,7 +28,7 @@ Create Mapper object
 // Create knex connection
 let knexClient = knex(...);
 
-import * as sqlMapper from 'simple-typed-sql';
+import * as sqlMapper from 'typed-sql';
 
 let mapper = new sqlMapper.Mapper(knexClient);
 ```
