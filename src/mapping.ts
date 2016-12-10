@@ -160,7 +160,7 @@ export function getInstanceStub<T>(mapping: Mapping<T>) {
 }
 
 export type AttributeMap<T> = {
-    readonly [P in keyof T]: Attribute<T[P]>
+    [P in keyof T]: Attribute<T[P]>
 }
 
 /**
