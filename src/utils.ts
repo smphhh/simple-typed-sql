@@ -54,7 +54,7 @@ export namespace Utils {
     /**
      * Return a select definition selecting all attributes of a Mapping.
      */
-    export function selectAll<T>(mapping: Mapping<T>): AttributeMap<T> {
+    export function selectAll<T>(mapping: Mapping<T>): SelectExpression<T> {
         let mappingData = WrappedMappingData.getMappingData(mapping);
         return mappingData.getAttributeDefinitionMap() as any;
     }
