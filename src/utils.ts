@@ -8,6 +8,7 @@ import {
 import { SelectExpression } from './core';
 import { CustomError } from './definition';
 import {
+    AttributeMap,
     BaseAttribute,
     BaseMappingData,
     Mapping,
@@ -53,7 +54,7 @@ export namespace Utils {
     /**
      * Return a select definition selecting all attributes of a Mapping.
      */
-    export function selectAll<T>(mapping: Mapping<T>): T {
+    export function selectAll<T>(mapping: Mapping<T>): AttributeMap<T> {
         let mappingData = WrappedMappingData.getMappingData(mapping);
         return mappingData.getAttributeDefinitionMap() as any;
     }
