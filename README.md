@@ -1,6 +1,6 @@
 # Typed SQL
 
-SQL query builder for TypeScript. Write complex SQL queries without needing use
+SQL query builder for TypeScript. Write complex SQL queries without needing to use
 strings to refer to column or table names. Provides partial type safety and attribute auto-completion when
 used with TypeScript. Powered by Knex.js.
 
