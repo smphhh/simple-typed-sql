@@ -20,7 +20,7 @@ let expect = chai.expect;
 
 let config = createConfig();
 
-describe("Simple typed SQL utils", function () {
+describe("Utils", function () {
 
     let mapper: Mapper;
     let knexClient: knex;

@@ -24,7 +24,7 @@ let expect = chai.expect;
 
 let config = createConfig();
 
-describe("Simple typed SQL", function () {
+describe("Typed SQL", function () {
 
     let testMapping1 = defineMapping(
         'test_model_with_some_extra_padding_plus_some_more',

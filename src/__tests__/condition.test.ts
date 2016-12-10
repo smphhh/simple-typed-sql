@@ -25,7 +25,7 @@ let expect = chai.expect;
 
 let config = createConfig();
 
-describe("Simple typed SQL condition", function () {
+describe("Conditions", function () {
 
     let testMapping1 = defineMapping(
         'test_model',

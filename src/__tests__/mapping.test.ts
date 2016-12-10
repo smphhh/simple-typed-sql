@@ -14,7 +14,7 @@ chai.use(chaiAsPromised);
 
 let expect = chai.expect;
 
-describe("Simple typed SQL mapping", function () {
+describe("Mapping", function () {
 
     it("should only have the attributes as own property names", function () {
         let mapping = defineMapping(
