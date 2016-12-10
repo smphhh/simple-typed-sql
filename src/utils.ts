@@ -5,6 +5,7 @@ import {
     ComparisonClause,
     ComparisonOperandType
 } from './condition';
+import { SelectExpression } from './core';
 import { CustomError } from './definition';
 import {
     BaseAttribute,
@@ -55,6 +56,13 @@ export namespace Utils {
     export function selectAll<T>(mapping: Mapping<T>): T {
         let mappingData = WrappedMappingData.getMappingData(mapping);
         return mappingData.getAttributeDefinitionMap() as any;
+    }
+
+    /**
+     * Return a stub object with the same type as the result of the select expression.
+     */
+    export function getSelectResultStub<T>(selectExpression: SelectExpression<T>) {
+        return {} as T;
     }
 }
 

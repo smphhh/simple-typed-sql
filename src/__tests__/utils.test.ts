@@ -102,6 +102,15 @@ describe("Utils", function () {
 
         expect(await query.getOne()).to.deep.equal(Object.assign({ orderTime: Objects.order1.orderTime }, Objects.orderDetail1));
     });
+
+    it("should support getting the select query return type from a select expression", function () {
+        let obj = Utils.getSelectResultStub({
+            id2: Mappings.order.id,
+            someDate: Mappings.order.orderTime
+        });
+
+        obj as { id2: number, someDate: Date };
+    });
 });
 
 
