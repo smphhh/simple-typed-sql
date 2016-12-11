@@ -84,32 +84,32 @@ export class AggregationExpression<T> extends BaseAggregationExpression {
 
     constructor(
         aggregationFunction: AggregationFunction,
-        operand?: BaseAttribute | ValueType
+        operand?: BaseAttribute
     ) {
         super(aggregationFunction, operand);
     }
 }
 
 export function sum<T extends ValueType>(operand: Attribute<T>) {
-    return new AggregationExpression<T>("sum", operand);
+    return new AggregationExpression<T>("sum", Attribute.getBaseAttribute(operand));
 }
 
 export function avg<T extends ValueType>(operand: Attribute<T>) {
-    return new AggregationExpression<T>("avg", operand);
+    return new AggregationExpression<T>("avg", Attribute.getBaseAttribute(operand));
 }
 
 export function max<T extends ValueType>(operand: Attribute<T>) {
-    return new AggregationExpression<T>("max", operand);
+    return new AggregationExpression<T>("max", Attribute.getBaseAttribute(operand));
 }
 
 export function min<T extends ValueType>(operand: Attribute<T>) {
-    return new AggregationExpression<T>("avg", operand);
+    return new AggregationExpression<T>("avg", Attribute.getBaseAttribute(operand));
 }
 
-export function count(operand?: AggregationOperandType) {
-    return new AggregationExpression<number>("count", operand);
+export function count(operand?: Attribute<any>) {
+    return new AggregationExpression<number>("count", operand && Attribute.getBaseAttribute(operand));
 }
 
-export function countDistinct(operand?: AggregationOperandType) {
-    return new AggregationExpression<number>("countDistinct", operand);
+export function countDistinct(operand?: Attribute<any>) {
+    return new AggregationExpression<number>("countDistinct", operand && Attribute.getBaseAttribute(operand));
 }

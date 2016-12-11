@@ -52,15 +52,26 @@ export class BaseMappingData<T> {
         return this.getAttributeDefinitions().map(item => item.getAbsoluteFieldName());
     }
 
+    getAttributeMap() {
+        return this.getAttributeNames().reduce((definitionMap, name: keyof T) => {
+            definitionMap[name] = this.getAttribute(name);
+            return definitionMap;
+        }, {} as AttributeMap<T>);
+    }
+
     getAttributeDefinitionMap() {
-        return this.getAttributes().reduce((definitionMap, name) => {
+        return this.getAttributeNames().reduce((definitionMap, name) => {
             definitionMap[name] = this.getAttributeDefinition(name);
             return definitionMap;
-        }, {} as AttributeDefinitionMap)
+        }, {} as AttributeDefinitionMap);
     }
 
     getAttributeDefinitions() {
-        return this.getAttributes().map(key => this.getAttributeDefinition(key));
+        return this.getAttributeNames().map(key => this.getAttributeDefinition(key));
+    }
+
+    getAttribute<K extends keyof T>(name: K) {
+        return new Attribute<T[K]>(this.getAttributeDefinition(name));
     }
 
     getAttributeDefinition(name: string): BaseAttribute {
@@ -77,7 +88,7 @@ export class BaseMappingData<T> {
         }
     }
 
-    getAttributes() {
+    getAttributeNames() {
         return Object.keys(this.__metadata.attributes);
     }
 
@@ -132,16 +143,18 @@ export class BaseAttribute {
     }
 }
 
-export class Attribute<T> extends BaseAttribute {
+export class Attribute<T> {
     protected __value: T;
+    protected __baseAttribute: BaseAttribute;
 
     constructor(
-        mapping: Mapping<{}>,
-        dataType: AttributeTypeName,
-        attributeName: string,
-        fieldName: string
+        baseAttribute: BaseAttribute
     ) {
-        super(mapping, dataType, attributeName, fieldName);
+        this.__baseAttribute = baseAttribute;
+    }
+
+    static getBaseAttribute(attribute: Attribute<any>) {
+        return attribute.__baseAttribute;
     }
 }
 
@@ -155,8 +168,14 @@ export class WrappedMappingData<T> {
     }
 }
 
+export type BaseInstanceType = Record<string, any>;
+
 export function getInstanceStub<T>(mapping: Mapping<T>) {
     return WrappedMappingData.getMappingData(mapping).getInstanceStub();
+}
+
+export interface BaseAttributeMap {
+    [key: string]: Attribute<any>;
 }
 
 export type AttributeMap<T> = {
@@ -194,10 +213,10 @@ export function defineMappingAndInstanceStub<T>(
 function wrapMappingData<T>(mappingData: BaseMappingData<T>) {
     let wrapper = Object.create(mappingData, {});
     
-    for (let prop of mappingData.getAttributes()) {
+    for (let prop of mappingData.getAttributeNames()) {
         Object.defineProperty(wrapper, prop, {
             enumerable: true,
-            get: () => wrapper.getAttributeDefinition(prop)
+            get: () => new Attribute<any>(wrapper.getAttributeDefinition(prop))
         });
     }
     

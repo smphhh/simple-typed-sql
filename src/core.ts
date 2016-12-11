@@ -98,7 +98,7 @@ export class BaseMapper {
 
     async tryFindOneByKey<T extends U, U>(wrappedMapping: Mapping<T>, key: U) {
         let mapping = WrappedMappingData.getMappingData(wrappedMapping);
-        let attributeNames = mapping.getAttributes();
+        let attributeNames = mapping.getAttributeNames();
         let whereConditions = serializeData(mapping, key, this.options);
         let fieldNames = mapping.getAbsoluteFieldNames();
         let query = this.knexInterface
@@ -194,24 +194,24 @@ export class FromQuery<SourceType> extends BaseQuery {
         return this.conditionJoin("innerJoin", joinMapping, condition);
     }
 
-    innerJoinEqual<T>(joinMapping: Mapping<any>, field1: T, field2: T) {
-        return this.simpleJoin("innerJoin", joinMapping, field1, field2);
+    innerJoinEqual<T>(joinMapping: Mapping<any>, attribute1: Attribute<T>, attribute2: Attribute<T>) {
+        return this.simpleJoin("innerJoin", joinMapping, attribute1, attribute2);
     }
 
     leftOuterJoin<T>(joinMapping: Mapping<T>, condition: ConditionClause) {
         return this.conditionJoin("leftOuterJoin", joinMapping, condition);
     }
 
-    leftOuterJoinEqual<T>(joinMapping: Mapping<any>, field1: T, field2: T) {
-        return this.simpleJoin("leftOuterJoin", joinMapping, field1, field2);
+    leftOuterJoinEqual<T>(joinMapping: Mapping<any>, attribute1: Attribute<T>, attribute2: Attribute<T>) {
+        return this.simpleJoin("leftOuterJoin", joinMapping, attribute1, attribute2);
     }
 
     rightOuterJoin<T>(joinMapping: Mapping<T>, condition: ConditionClause) {
         return this.conditionJoin("rightOuterJoin", joinMapping, condition);
     }
 
-    rightOuterJoinEqual<T>(joinMapping: Mapping<any>, field1: T, field2: T) {
-        return this.simpleJoin("rightOuterJoin", joinMapping, field1, field2);
+    rightOuterJoinEqual<T>(joinMapping: Mapping<any>, attribute1: Attribute<T>, attribute2: Attribute<T>) {
+        return this.simpleJoin("rightOuterJoin", joinMapping, attribute1, attribute2);
     }
 
     select<T>(selectInput: SelectExpression<T>) {
@@ -231,14 +231,12 @@ export class FromQuery<SourceType> extends BaseQuery {
             this.knexQuery,
             this.mappings,
             this.serializationOptions,
-            mappingData.getAttributeDefinitionMap() as any
+            SelectQuery.selectAll(mapping)
         );
     }
 
-    private simpleJoin<T, U>(joinType: JoinType, wrappedJoinMapping: Mapping<U>, field1: T, field2: T) {
+    private simpleJoin<T, U>(joinType: JoinType, wrappedJoinMapping: Mapping<U>, attribute1: Attribute<T>, attribute2: Attribute<T>) {
         let joinMapping = WrappedMappingData.getMappingData(wrappedJoinMapping);
-        let attribute1: BaseAttribute = field1 as any;
-        let attribute2: BaseAttribute = field2 as any;
         let joinTableName = joinMapping.getTableName();
         if (this.mappings.has(joinTableName)) {
             throw new Error(`Invalid join. The same table (${joinTableName}) can be referred to in one from-clause only in SimpleFromQuery.`);
@@ -246,8 +244,8 @@ export class FromQuery<SourceType> extends BaseQuery {
         this.mappings.set(joinTableName, joinMapping);
         this.knexQuery = this.knexQuery[joinType](
             joinMapping.getTableName(),
-            attribute1.getAbsoluteFieldName(),
-            attribute2.getAbsoluteFieldName()
+            Attribute.getBaseAttribute(attribute1).getAbsoluteFieldName(),
+            Attribute.getBaseAttribute(attribute2).getAbsoluteFieldName()
         );
 
         return this;
@@ -319,12 +317,12 @@ export class SelectQuery<ResultType> extends WhereQuery {
         super(knexClient, knexQuery);
     }
 
-    private static parseSelectInput<T>(knexClient: knex, mappings: Map<string, BaseMappingData<any>>, input: T) {
+    private static parseSelectInput<T>(knexClient: knex, mappings: Map<string, BaseMappingData<any>>, input: SelectExpression<T>) {
         return Object.keys(input).reduce((attributeData, key) => {
-            let expression: BaseAttribute | BaseAggregationExpression = input[key];
+            let expression = input[key];
 
-            if (expression instanceof BaseAttribute) {
-                let attributeDefinition: BaseAttribute = input[key];
+            if (expression instanceof Attribute) {
+                let attributeDefinition = Attribute.getBaseAttribute(expression);
                 let attributeMappingData = WrappedMappingData.getMappingData(attributeDefinition.mapping);
                 let tableName = attributeMappingData.getTableName();
                 if (!mappings.has(tableName)) {
@@ -343,7 +341,7 @@ export class SelectQuery<ResultType> extends WhereQuery {
 
                 //return BaseMappingData.getAliasedAttributeName(newAttributeDefinition);
 
-            } else if (expression instanceof BaseAggregationExpression) {
+            } else if (expression instanceof AggregationExpression) {
                 attributeData.fieldMap[key] = expression.getAttributeDefinition(key);
                 attributeData.selectDefinition[key] = expression.buildAggregationClause(knexClient, key);
             }
@@ -358,7 +356,7 @@ export class SelectQuery<ResultType> extends WhereQuery {
         knexQuery: knex.QueryBuilder,
         mappings: Map<string, BaseMappingData<any>>,
         serializationOptions: SerializationOptions,
-        selectInput: SelectDefinitionMap<T>
+        selectInput: SelectExpression<T>
     ) {
         let attributeData = SelectQuery.parseSelectInput(knexClient, mappings, selectInput);
         let query = knexQuery.select(Object.keys(attributeData.selectDefinition).map(item => attributeData.selectDefinition[item]));
@@ -369,6 +367,11 @@ export class SelectQuery<ResultType> extends WhereQuery {
             serializationOptions,
             attributeData.fieldMap
         );
+    }
+
+    static selectAll<T>(mapping: Mapping<T>): SelectExpression<T> {
+        let mappingData = WrappedMappingData.getMappingData(mapping);
+        return mappingData.getAttributeMap() as any;
     }
 
     forUpdate() {
@@ -386,12 +389,12 @@ export class SelectQuery<ResultType> extends WhereQuery {
         return this;
     }
 
-    orderBy(attribute: BaseAttribute | BaseAggregationExpression | ValueType, direction: 'asc' | 'desc') {
-        if (attribute instanceof BaseAttribute) {
-            this.knexQuery.orderBy(attribute.getAbsoluteFieldName(), direction);
+    orderBy(attribute: Attribute<any> | AggregationExpression<any>, direction: 'asc' | 'desc') {
+        if (attribute instanceof Attribute) {
+            this.knexQuery.orderBy(Attribute.getBaseAttribute(attribute).getAbsoluteFieldName(), direction);
             return this;
 
-        } else if (attribute instanceof BaseAggregationExpression) {
+        } else if (attribute instanceof AggregationExpression) {
             this.knexQuery.orderBy(attribute.buildAggregationClause(this.knexClient) as any, direction);
             return this;
 
@@ -400,17 +403,9 @@ export class SelectQuery<ResultType> extends WhereQuery {
         }
     }
 
-    groupBy(...attributes: (BaseAttribute | ValueType)[]) {
-        let fieldNames = attributes.map(item => {
-            if (item instanceof BaseAttribute) {
-                return item.getAbsoluteFieldName();
-            } else {
-                throw new Error(`Invalid group by attribute: ${item}`);
-            }
-        });
-
+    groupBy(...attributes: Attribute<any>[]) {
+        let fieldNames = attributes.map(item => Attribute.getBaseAttribute(item).getAbsoluteFieldName());
         this.knexQuery.groupBy(fieldNames);
-
         return this;
     }
 
@@ -480,16 +475,9 @@ export class UpdateQuery<T, U> extends WhereQuery implements PromiseLike<number>
         super(knexClient, knexQuery);
     }
 
-    set<T extends ValueType>(attribute: T | Attribute<T>, expression: T) {
-        let attributeOperand: OperandType = attribute;
-        let expressionOperand: OperandType = expression;
-
-        if (attributeOperand instanceof BaseAttribute && !(expressionOperand instanceof BaseAttribute)) {
-            this.knexQuery.update(attributeOperand.getFieldName(), expressionOperand);
-        } else {
-            throw new Error("Invalid arguments.");
-        }
-
+    set<T extends ValueType>(attribute: Attribute<T>, value: T) {
+        const baseAttribute = Attribute.getBaseAttribute(attribute);
+        this.knexQuery.update(baseAttribute.getFieldName(), value);
         return this;
     }
 

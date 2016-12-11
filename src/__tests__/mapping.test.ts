@@ -3,6 +3,7 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 
 import {
+    Attribute,
     defineMapping,
     defineNumber,
     defineString,
@@ -39,9 +40,9 @@ describe("Mapping", function () {
 
         let mappingData = WrappedMappingData.getMappingData(mapping);
         let fooAttributeDefinition = mappingData.getAttributeDefinition('foo');
-        let fooAttributeDefinition2: BaseAttribute = mapping.foo as any;
+        let fooAttribute = mapping.foo;
         expect(fooAttributeDefinition.mapping).to.equal(mapping);
-        expect(fooAttributeDefinition2.mapping).to.equal(mapping);
+        expect(Attribute.getBaseAttribute(fooAttribute).mapping).to.equal(mapping);
     });
 
     it("should error on property set attempt", async function () {
@@ -50,9 +51,9 @@ describe("Mapping", function () {
             {
                 bar: defineString()
             }
-        ) as any;
+        );
 
-        expect(function () { mapping.bar = "a"; }).to.throw(Error);
+        expect(function () { mapping.bar = "a" as any; }).to.throw(Error);
     });
 });
 

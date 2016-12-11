@@ -5,7 +5,7 @@ import {
     ComparisonClause,
     ComparisonOperandType
 } from './condition';
-import { SelectExpression } from './core';
+import { SelectExpression, SelectQuery } from './core';
 import { CustomError } from './definition';
 import {
     AttributeMap,
@@ -54,10 +54,7 @@ export namespace Utils {
     /**
      * Return a select definition selecting all attributes of a Mapping.
      */
-    export function selectAll<T>(mapping: Mapping<T>): SelectExpression<T> {
-        let mappingData = WrappedMappingData.getMappingData(mapping);
-        return mappingData.getAttributeDefinitionMap() as any;
-    }
+    export const selectAll = SelectQuery.selectAll;
 
     /**
      * Return a stub object with the same type as the result of the select expression.

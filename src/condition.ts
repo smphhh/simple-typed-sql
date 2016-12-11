@@ -103,7 +103,11 @@ export function comparison<T extends ComparisonValueType>(
     operator: ComparisonOperator,
     operand2: T | Attribute<T>
 ) {
-    return new ComparisonClause(operator, operand1, operand2);
+    return new ComparisonClause(
+        operator,
+        operand1 instanceof Attribute ? Attribute.getBaseAttribute(operand1) : operand1,
+        operand2 instanceof Attribute ? Attribute.getBaseAttribute(operand2) : operand2
+    );
 }
 
 export function equal<T extends ComparisonValueType>(
