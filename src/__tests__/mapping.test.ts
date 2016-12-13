@@ -45,7 +45,7 @@ describe("Mapping", function () {
         expect(Attribute.getBaseAttribute(fooAttribute).mapping).to.equal(mapping);
     });
 
-    it("should error on property set attempt", async function () {
+    it("should error on property set attempt", function () {
         let mapping = defineMapping(
             'foo',
             {

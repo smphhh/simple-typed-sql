@@ -569,4 +569,19 @@ describe("Typed SQL", function () {
 
         expect(data).to.deep.equal([{ value2: testObject3_2.value}]);
     });
+
+    it("should support mappings in non-default schemas", function () {
+        let mapping = defineMapping(
+            'my_schema.foo',
+            {
+                id: defineNumber()
+            }
+        );
+
+        let query = mapper
+            .from(mapping)
+            .selectAll(mapping);
+
+        expect(query.getKnexQuery().toQuery()).to.equal('select "my_schema"."foo"."id" as "id" from "my_schema"."foo"');        
+    });
 });
